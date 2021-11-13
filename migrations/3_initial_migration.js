@@ -1,7 +1,7 @@
 // migrations/2_deploy.js
 // SPDX-License-Identifier: MIT
 const ERC20PresetFixedSupply = artifacts.require("ERC20PresetFixedSupply");
-const ERC20PanToken = artifacts.require("ERC20BeanToken");
+const ERC20MuToken = artifacts.require("ERC20MuToken");
 const ERC20ZhiToken = artifacts.require("ERC20ZhiToken");
 const ERC721Card = artifacts.require("ERC721Card");
 const PantheonIDO = artifacts.require("PantheonIDO");
@@ -125,14 +125,16 @@ module.exports = async function(deployer, network, accounts) {
     //});
     // await sleep(5000);
     let zhiToken = await ERC20ZhiToken.deployed();
+    let muToken = await ERC20MuToken.deployed();
+    let pool = await MuTokenPool.deployed();
+    console.log(muToken.address);
     console.log(zhiToken.address);
+    console.log(pool.address);
+    console.log("Pool init start.")
     // let pool = await MuTokenPool.deployed();
     // console.log(pool.address);
     // await sleep(5000);
     // await deployer.deploy(MuTokenPool, "TMzAxhn1ZgvBR4RsdeVPq6qhUg5svcjaox", FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
-    let pool = await MuTokenPool.deployed();
-    console.log(pool.address);
-    console.log("Pool init start.")
     // MuTokenPool.deployed().then(pool => {
     //   ERC20ZhiToken.deployed().then(zhiToken => {
     //     console.log("setExcludeFromFee start.")
@@ -145,30 +147,33 @@ module.exports = async function(deployer, network, accounts) {
     //   });
     // });
     console.log("Pool init 1.")
-    // await zhiToken.transfer(pool.address, "10000000000");
+    await zhiToken.transfer(pool.address, "10000000000");
     // // pool.addPool(rate, token, isLp, dayNum, withUpdate);
-    // console.log("Pool init 2.")
-    // console.log("balance: ", (await zhiToken.balanceOf(pool.address)).toString());
-    // await pool.addPool(1000, zhiToken.address, zeroAddress, true, 3*24*1200, false);
+    console.log("balance: ", (await zhiToken.balanceOf(pool.address)).toString());
+    console.log("Pool init 2.")
+    await pool.addPool(1000, muToken.address, zeroAddress, true, 3*24*1200, false);
 
-    // await zhiToken.setExcludeFromFee(pool.address);
-    // await pool.setMainToken(zhiToken.address);
-    // await pool.setBeneficience("TXynF4tteSE6aQis6JH6sskEVfcKQk9pRt");
-    await pool.setInviteEnable(false);
-    // await zhiToken.transfer(accounts, "1200000000");
-    const minerInfo = await pool.minerInfo(0, accounts);
-    console.log(minerInfo);
-    const approve = await zhiToken.approve(pool.address, "1000000000000", {from: accounts})
-    console.log(approve);
-    const deposit = await pool.deposit(0, 1000000, {callValue: 10000000, from: accounts});
-    // const deposit = await pool.call("deposit", 0, "1000000", {value: "1000000"})
-    console.log(deposit);
-    // await pool.updateReward();
-    const minerInfo2 = await pool.minerInfo(0, accounts);
-    console.log(minerInfo2);
+    await zhiToken.setExcludeFromFee(pool.address);
+    await pool.setMainToken(zhiToken.address);
+    await pool.setBeneficience("TXynF4tteSE6aQis6JH6sskEVfcKQk9pRt");
+    // await pool.setInviteEnable(false);
+    // transfer to myself
+    await muToken.transfer(accounts, "120000000000");
+    // Transfer to royi
+    await muToken.transfer("TUFi19U1qm1Nvgrb3ciyXGbpcK5uZEPEAG", "130000000000");
+    // const minerInfo = await pool.minerInfo(0, accounts);
+    // const approve = await zhiToken.approve(pool.address, "1000000000000", {from: accounts})
+    // const deposit = await pool.deposit(0, 1000000, {callValue: 10000000, from: accounts});
+    // console.log(minerInfo);
+    // console.log(approve);
+    // // const deposit = await pool.call("deposit", 0, "1000000", {value: "1000000"})
+    // console.log(deposit);
+    // // await pool.updateReward();
+    // const minerInfo2 = await pool.minerInfo(0, accounts);
+    // console.log(minerInfo2);
 
-    const balance = (await  zhiToken.balanceOf(pool.address)).toString();
-    console.log(balance);
+    // const balance = (await  zhiToken.balanceOf(pool.address)).toString();
+    // console.log(balance);
     // assert.equal(minerInfo2.power.toString(), minerInfo.power.toNumber() + 2000000);
     // await wait(15);
 

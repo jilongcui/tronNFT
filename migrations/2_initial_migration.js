@@ -1,7 +1,7 @@
 // migrations/2_deploy.js
 // SPDX-License-Identifier: MIT
 const ERC20PresetFixedSupply = artifacts.require("ERC20PresetFixedSupply");
-const ERC20PanToken = artifacts.require("ERC20BeanToken");
+const ERC20MuToken = artifacts.require("ERC20MuToken");
 const ERC20ZhiToken = artifacts.require("ERC20ZhiToken");
 const ERC721Card = artifacts.require("ERC721Card");
 const PantheonIDO = artifacts.require("PantheonIDO");
@@ -112,17 +112,16 @@ module.exports = async function(deployer, network, accounts) {
     // 全部挖矿产出：288万枚
 
     let initSupply = 2888888;
+    let initMuSupply = 1000000;
     let lastRemainSupply = 188888;
     
     // let startTimestamp = toTimestamp("2021-09-18 21:00:00");
     let startTimestamp = "1632574800";
     let totalReward = "2880000000000";
-    let startBlock = 35277657;
+    let startBlock = 	19889000;
     deployer.deploy(ERC20ZhiToken, airdropAddress, initSupply, lastRemainSupply, startTimestamp, accounts);
-    // await deployer.link(ERC20ZhiToken, MuTokenPool);
-    //.then(async zhiToken => {
+    deployer.deploy(ERC20MuToken, initMuSupply, accounts);
     deployer.deploy(MuTokenPool, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
-    //});
     // await sleep(5000);
     // let zhiToken = await ERC20ZhiToken.deployed();
     // console.log(zhiToken.address);
@@ -133,17 +132,17 @@ module.exports = async function(deployer, network, accounts) {
     // let pool = await MuTokenPool.deployed();
     // console.log(pool.address);
     console.log("Pool init start.")
-    MuTokenPool.deployed().then(pool => {
-      ERC20ZhiToken.deployed().then(zhiToken => {
-        console.log("setExcludeFromFee start.")
-        // console.log(zhiToken)
-        // console.log(pool)
-        zhiToken.setExcludeFromFee(pool.address);
-        zhiToken.transfer(pool.address, "1000000000");
-        console.log("balance: ", (zhiToken.balanceOf(pool.address)).toString());
-        console.log("setExcludeFromFee end.")
-      });
-    });
+    // MuTokenPool.deployed().then(pool => {
+    //   ERC20ZhiToken.deployed().then(zhiToken => {
+    //     console.log("setExcludeFromFee start.")
+    //     // console.log(zhiToken)
+    //     // console.log(pool)
+    //     zhiToken.setExcludeFromFee(pool.address);
+    //     zhiToken.transfer(pool.address, "1000000000");
+    //     console.log("balance: ", (zhiToken.balanceOf(pool.address)).toString());
+    //     console.log("setExcludeFromFee end.")
+    //   });
+    // });
     // console.log("Pool init 1.")
     // await zhiToken.transfer(pool.address, "10000000000");
     // // pool.addPool(rate, token, isLp, dayNum, withUpdate);
@@ -176,6 +175,7 @@ module.exports = async function(deployer, network, accounts) {
     // 全部挖矿产出：288万枚
 
     let initSupply = 2888888;
+    let initMuSupply = 1000000;
     let lastRemainSupply = 188888;
     
     // let startTimestamp = toTimestamp("2021-09-18 21:00:00");
@@ -183,10 +183,11 @@ module.exports = async function(deployer, network, accounts) {
     let inviteAddress = accounts;
     let totalReward = "2880000000000";
     let startBlock = 0;
-    ERC20ZhiToken.resetAddress();
-    MuTokenPool.resetAddress();
+    // ERC20ZhiToken.resetAddress();
+    // MuTokenPool.resetAddress();
+    // ERC20MuToken.resetAddress();
     deployer.deploy(ERC20ZhiToken, airdropAddress, initSupply, lastRemainSupply, startTimestamp, accounts);
-    // deployer.link(ERC20ZhiToken, MuTokenPool);
+    deployer.deploy(ERC20MuToken, initMuSupply, accounts);
     deployer.deploy(MuTokenPool, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
     // deployer.link(ERC20ZhiToken, MuTokenPool);
     // ERC20ZhiToken.deployed().then(zhiToken => {
@@ -218,67 +219,6 @@ module.exports = async function(deployer, network, accounts) {
     // console.log("balance: ", (await zhiToken.balanceOf(pool.address)).toString());
     // await pool.addPool(1000, zhiToken.address, zeroAddress, true, 3*24*1200, false);
     console.log("Pool init end.")
-    // ERC20ZhiToken.deployed()
-    //     .then(zhiToken => {
-    //       tronWeb.contract().at(zhiToken.address).then( zhi2 => {
-    //         console.log(zhi2.address);
-    //       });
-    //       // let totalReward = "2880000";
-    //       // let startBlock = "35197155";
-    //       // console.log(zhiToken.address);
-    //       // deployer.deploy(MuTokenPool, zhiToken.address, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
-    //       // MuTokenPool.deployed().then(async pool => {
-    //       //   console.log(pool.address);
-    //       //   console.log("Pool init start.")
-    //       //   await zhiToken.setExcludeFromFee(pool.address);
-    //       //   console.log("Pool init 2.")
-    //       //   await zhiToken.transfer(pool.address, "10000000000");
-    //       //   // pool.addPool(rate, token, isLp, dayNum, withUpdate);
-    //       //   console.log("Pool init 2.")
-    //       //   await pool.addPool(1000, zhiToken.address, zeroAddress, true, 3*24*1200, false);
-    //       //   console.log("Pool init end.")
-            
-    //       // });
-    //       // // 要转给那几个地址
-    //       // await zhiToken.transfer("0x2f6aA65C79c7210da9d9CFA9DaD5Bcd0433D3C0A", web3.utils.toWei("290000")); //
-    //       // await zhiToken.transfer("0x31cDB66F1A8A1A243121674cb3928eD27D23c795", web3.utils.toWei("200000")); //
-    //       // await zhiToken.transfer("0x23bE592f69f83EafeDD03aA9992F22A3E856AC49", web3.utils.toWei("300000")); //
-    //       // await zhiToken.transfer("0x03fB46515DC130736f14492c4d67002B02A6488d", web3.utils.toWei("200000")); //
-    //       // // await zhiToken.transfer(ido.address, web3.utils.toWei("400000"));
-    //       // await zhiToken.setExcludeFromFee(pool.address);
-    //       // await zhiToken.setExcludeFromFee("0x2f6aA65C79c7210da9d9CFA9DaD5Bcd0433D3C0A");
-    //       // await zhiToken.setExcludeFromFee("0x31cDB66F1A8A1A243121674cb3928eD27D23c795");
-    //       // await zhiToken.setExcludeFromFee("0x23bE592f69f83EafeDD03aA9992F22A3E856AC49");
-    //       // await zhiToken.setExcludeFromFee("0x03fB46515DC130736f14492c4d67002B02A6488d");
-    //       // await zhiToken.transfer(pool.address, "10000000000");
-    //       // // console.log(token);
-    //       // // pool.addPool(rate, token, isLp, dayNum, withUpdate);
-    //       // await pool.addPool(1000, zhiToken.address, zeroAddress, true, 3*24*1200, false);
-    //       // await pool.addPool(4000, 0, zhiToken.address, zeroAddress, false, 7*24*1200, false);
-    //       // await pool.addPool(8000, 0, zhiToken.address, zeroAddress, false, 15*24*1200, false);
-    //       // await pool.addPool(16000, 0, zhiToken.address, zeroAddress, false, 30*24*1200, false);
-
-    //       // await deployer.deploy(BeanInviteReward, zhiToken.address, "0x2f6aA65C79c7210da9d9CFA9DaD5Bcd0433D3C0A");
-    //       // let inviteReward = await BeanInviteReward.deployed();
-    //       // await zhiToken.transfer(inviteReward.address, web3.utils.toWei("2000000"));
-    //       // // await pool.setInvite(inviteAddress, {from: "0x10586d9aA9dA7eB6E8FF045cD2F57ABC5EBB57D8"});
-
-    //       // console.log("115");
-    //       // console.log("BEAN");
-    //       // console.log(zhiToken.address);
-    //       // console.log("ERC721");
-    //       // console.log(erc721Address);
-    //       // // console.log("IDO");
-    //       // // console.log(ido.address);
-    //       // console.log("C2C");
-    //       // console.log(c2c.address);
-    //       // console.log("Pool");
-    //       // console.log(pool.address);
-    //       // console.log("Invite");
-    //       // console.log(inviteReward.address);
-    //       // console.log("USDT");
-    //       // console.log(BUSDT);
-    //     });
     // let zhiToken = await ERC20PanToken.at("0x3aF28Da6a016143a9DCa040eC8632D88fAA1cfd2");
     // zhiToken.setSwapAndLiquifyEnabled(true);
     // console.log(zhiToken.address);

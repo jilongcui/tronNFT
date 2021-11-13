@@ -5,6 +5,7 @@ const fs = require('fs');
 var wait = require('./wait')
 const MuTokenPool= artifacts.require("MuTokenPool");
 const ERC20ZhiToken= artifacts.require("ERC20ZhiToken");
+const ERC20MuToken= artifacts.require("ERC20MuToken");
 
 /*
  * uncomment accounts to access the test accounts made available by the
@@ -23,6 +24,7 @@ contract("MuTokenPool", function (accounts) {
     // meta = await MetaCoin.deployed()
     pool = await MuTokenPool.deployed();
     token = await ERC20ZhiToken.deployed()
+    muToken = await ERC20MuToken.deployed()
     // const tradeobj = await tronWeb.transactionBuilder.sendTrx(pool.address, 500000000);
     // const signedtxn = await tronWeb.trx.sign(tradeobj, privateKey);
     // console.log(signedtxn)
@@ -32,7 +34,7 @@ contract("MuTokenPool", function (accounts) {
     await token.transfer(accounts[0], "100000000");
     await token.transfer(accounts[2], "100000000");
     // pool.addPool(rate, token, isLp, dayNum, withUpdate);
-    await pool.addPool(1000, token.address, zeroAddress, true, 3*24*1200, false);
+    await pool.addPool(1000, muToken.address, zeroAddress, true, 3*24*1200, false);
     console.log("Beneficience ", accounts[5]);
     await pool.setBeneficience(accounts[5]);
     await pool.setMainToken(token.address);
@@ -51,7 +53,7 @@ contract("MuTokenPool", function (accounts) {
   it("Test init poolInfo", async function () {
     const poolInfo = await pool.poolInfo(0);
     console.log(poolInfo);
-    assert.equal(poolInfo.lpToken, token.address);
+    assert.equal(poolInfo.lpToken, muToken.address);
   })
 
   it("Test token balance of pool", async function() {
@@ -75,7 +77,7 @@ contract("MuTokenPool", function (accounts) {
   it("Test deposit with amount 1", async function() {
     const minerInfo = await pool.minerInfo(0, accounts[0]);
     console.log(minerInfo);
-    const approve = await token.approve(pool.address, "1000000000000", {from: accounts[0]})
+    const approve = await muToken.approve(pool.address, "1000000000000", {from: accounts[0]})
     console.log(approve);
     const deposit = await pool.deposit(0, 1000000, {callValue: 1000000, from: accounts[0]});
     // const deposit = await pool.call("deposit", 0, "1000000", {value: "1000000"})
@@ -84,7 +86,7 @@ contract("MuTokenPool", function (accounts) {
     const minerInfo2 = await pool.minerInfo(0, accounts[0]);
     console.log(minerInfo2);
 
-    const balance = (await  token.balanceOf(pool.address)).toString();
+    const balance = (await  muToken.balanceOf(pool.address)).toString();
     console.log(balance);
     assert.equal(minerInfo2.power.toString(), minerInfo.power.toNumber() + 2000000);
     await wait(15);
@@ -116,7 +118,7 @@ contract("MuTokenPool", function (accounts) {
     await wait(15);
     const minerInfo = await pool.minerInfo(0, accounts[0]);
     console.log(minerInfo);
-    const approve = await token.approve(pool.address, "1000000000000", {from: accounts[0]})
+    const approve = await muToken.approve(pool.address, "1000000000000", {from: accounts[0]})
     console.log(approve);
     const deposit = await pool.deposit(0, 1000000, {callValue: 1000000, from: accounts[0]});
     // const deposit = await pool.call("deposit", 0, "1000000", {value: "1000000"})
@@ -125,7 +127,7 @@ contract("MuTokenPool", function (accounts) {
     const minerInfo2 = await pool.minerInfo(0, accounts[0]);
     console.log(minerInfo2);
 
-    const balance = (await  token.balanceOf(pool.address)).toString();
+    const balance = (await  muToken.balanceOf(pool.address)).toString();
     console.log(balance);
     assert.equal(minerInfo2.power.toString(), minerInfo.power.toNumber() + 2000000);
   })
@@ -152,18 +154,7 @@ contract("MuTokenPool", function (accounts) {
 
   it("Check havest", async function() {
     await wait(10)
-    await pool.updateReward();
-    const balance = await token.balanceOf(accounts[0]);
-    const reward = await  pool.pendingReward(0, accounts[0]);
-    await  pool.harvest(0, {from: accounts[0]});
-    await wait(4)
-    const balance2 = await token.balanceOf(accounts[0]);
-    console.log(balance.toString(), reward.toString(), balance2.toString());
-    assert.isTrue(balance2.toNumber() < balance.toNumber() + reward.toNumber() + 8000);
-  })
-
-  it("Check havest", async function() {
-    await pool.updateReward();
+    // await pool.updateReward();
     const balance = await token.balanceOf(accounts[0]);
     const reward = await  pool.pendingReward(0, accounts[0]);
     await  pool.harvest(0, {from: accounts[0]});
@@ -174,7 +165,18 @@ contract("MuTokenPool", function (accounts) {
   })
 
   it("Check havest", async function() {
-    await pool.updateReward();
+    // await pool.updateReward();
+    const balance = await token.balanceOf(accounts[0]);
+    const reward = await  pool.pendingReward(0, accounts[0]);
+    await  pool.harvest(0, {from: accounts[0]});
+    await wait(6)
+    const balance2 = await token.balanceOf(accounts[0]);
+    console.log(balance.toString(), reward.toString(), balance2.toString());
+    assert.isTrue(balance2.toNumber() < balance.toNumber() + reward.toNumber() + 8000);
+  })
+
+  it("Check havest", async function() {
+    // await pool.updateReward();
     const balance = await token.balanceOf(accounts[0]);
     const reward = await  pool.pendingReward(0, accounts[0]);
     await  pool.harvest(0, {from: accounts[0]});

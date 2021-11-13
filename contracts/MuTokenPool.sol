@@ -59,6 +59,7 @@ contract MuTokenPool is Ownable {
         uint256 amount; // 本金
         uint256 power; // 算力
         // uint256 endBlock; // 结束block
+        uint256 pendingReward;
         uint256 rewardDebt; // Reward debt. See explanation below.
     }
     // Info of each pool. pool is set manully.
@@ -211,7 +212,19 @@ contract MuTokenPool is Ownable {
         require(userParent[msg.sender] == address(0), "You already be invited.");
         require(userParent[parent] != address(0), "Parent should be invite first.");
         require(parent != msg.sender, "You cannot invite yourself.");
+        uint256 pid = 0;
         userParent[msg.sender] = parent;
+        MinerInfo storage miner = minerInfo[pid][msg.sender];
+        uint256 pending =
+            miner.power.mul(accChaPerShare).div(1e12).sub(
+                miner.rewardDebt
+            );
+        if (pending > 0) {
+            // safeChaTransfer(msg.sender, pending);
+            miner.pendingReward += pending;
+            miner.rewardDebt = miner.power.mul(accChaPerShare).div(1e12);
+            emit Harvest(msg.sender, pid, pending);
+        }
         emit InviteUser(parent, msg.sender, block.timestamp);
     }
 
@@ -277,6 +290,7 @@ contract MuTokenPool is Ownable {
         uint256 power = miner.power;
         uint256 rewardDebt = miner.rewardDebt;
         
+        // calculate new pendingReward
         if (power != 0 && block.number > lastRewardBlock && totalPower != 0) {
             uint256 lastBlock = lastRewardBlock.sub(baseBlock);
             uint256 endBlock = block.number.sub(baseBlock);
@@ -289,7 +303,7 @@ contract MuTokenPool is Ownable {
                 chaReward.mul(1e12).div(totalPower)
             );
         }
-        return power.mul(accCha).div(1e12).sub(rewardDebt);
+        return miner.pendingReward.add(power.mul(accCha).div(1e12).sub(rewardDebt));
     }
 
     // Update reward variables of the given pool to be up-to-date.
@@ -351,8 +365,10 @@ contract MuTokenPool is Ownable {
                 miner.power.mul(accChaPerShare).div(1e12).sub(
                     miner.rewardDebt
                 );
-            safeChaTransfer(msg.sender, pending);
+            // safeChaTransfer(msg.sender, pending);
+            miner.pendingReward = miner.pendingReward.add(pending);
         }
+        
         // pool.lpToken.approve(address(this), _amount);
         pool.lpToken.transferFrom(
             address(msg.sender),
@@ -375,7 +391,7 @@ contract MuTokenPool is Ownable {
         //         ethAmount
         //     );
         // }
-        miner.amount = miner.amount.add(ethAmount);
+        miner.amount = miner.amount.add(_amount);
         uint256 usdtAmount = getUsdtValue(ethAmount);
         require(usdtAmount >= 1e6, "Require depsit value big than 25U.");
         uint256 power = usdtAmount.mul(2);
@@ -396,18 +412,19 @@ contract MuTokenPool is Ownable {
 
     // harvest LP tokens from BeanPool.
     function harvest(uint256 _pid) public {
-        
+        updateReward();
         // PoolInfo storage pool = poolInfo[_pid];
         MinerInfo storage miner = minerInfo[_pid][msg.sender];
         uint256 pending =
             miner.power.mul(accChaPerShare).div(1e12).sub(
                 miner.rewardDebt
             );
+        pending = miner.pendingReward.add(pending);
         require(pending > 0, "harvest: none reward");
         safeChaTransfer(msg.sender, pending);
         miner.rewardDebt = miner.power.mul(accChaPerShare).div(1e12);
+        miner.pendingReward = 0;
         emit Harvest(msg.sender, _pid, pending);
-        updateReward();
     }
 
     // // Withdraw LP tokens from BeanPool.
