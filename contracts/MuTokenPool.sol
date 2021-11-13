@@ -58,7 +58,7 @@ contract MuTokenPool is Ownable {
     struct MinerInfo {
         uint256 amount; // 本金
         uint256 power; // 算力
-        uint256 endBlock; // 结束block
+        // uint256 endBlock; // 结束block
         uint256 rewardDebt; // Reward debt. See explanation below.
     }
     // Info of each pool. pool is set manully.
@@ -76,7 +76,7 @@ contract MuTokenPool is Ownable {
     uint256 public totalPower;
 
     // Invite
-    bool public inviteForce = true;
+    bool public inviteForce = false;
     uint8 public maxInviteLayer = 2;
     // The CHA TOKEN!
     IERC20 public panToken;
@@ -87,7 +87,6 @@ contract MuTokenPool is Ownable {
     address public airdropAddress;
     address public beneficience;
     // Block number when bonus CHA period ends.
-    // uint256 public bonusEndBlock;
     // Total reward for miner
     uint256 public totalReward;
     // Total released reward
@@ -122,18 +121,14 @@ contract MuTokenPool is Ownable {
     event InviteUser(address indexed parent, address indexed child, uint256 timestamp);
 
     constructor(
-        IERC20 _chaAddress,
         address _uniswapV2Pair,
         address _usdtPairAddress,
         address _initInviteAddress,
         address _airdropAddress,
         address _beneficience,
-        // uint256 _chaPerBlock,
-        // uint256 _padPerBlock,
         uint256 _initBlock,
         uint256 _totalReward
     ) {
-        panToken = _chaAddress;
         airdropAddress = _airdropAddress;
         beneficience = _beneficience;
         uniswapV2Pair = _uniswapV2Pair;
@@ -142,7 +137,6 @@ contract MuTokenPool is Ownable {
         padPerBlock = 6028; // should div(1000000)
         restartReward = 50000000000;
         blackholeAddress = address(0x000000000000000000000000000000000000dEaD);
-        // bonusEndBlock = _bonusEndBlock;
         
         totalReward = _totalReward;
         lastRewardBlock =
@@ -269,16 +263,6 @@ contract MuTokenPool is Ownable {
         returns (uint256)
     {
         return _to.sub(_from);
-        // if (_to <= bonusEndBlock) {
-        //     return _to.sub(_from).mul(BONUS_MULTIPLIER);
-        // } else if (_from >= bonusEndBlock) {
-        //     return _to.sub(_from);
-        // } else {
-        //     return
-        //         bonusEndBlock.sub(_from).mul(BONUS_MULTIPLIER).add(
-        //             _to.sub(bonusEndBlock)
-        //         );
-        // }
     }
 
     // View function to see pending CHA on frontend.
@@ -307,14 +291,6 @@ contract MuTokenPool is Ownable {
         }
         return power.mul(accCha).div(1e12).sub(rewardDebt);
     }
-
-    // Update reward vairables for all pools. Be careful of gas spending!
-    // function updateReward() public {
-    //     uint256 length = poolInfo.length;
-    //     for (uint256 pid = 0; pid < length; ++pid) {
-    //         updateReward(pid);
-    //     }
-    // }
 
     // Update reward variables of the given pool to be up-to-date.
     function updateReward() public {
@@ -350,15 +326,15 @@ contract MuTokenPool is Ownable {
     }
 
     function getEthValue(uint256 amount) public view returns(uint256) {
-        IJustswapExchange pair = IJustswapExchange(uniswapV2Pair);
-        return pair.getTokenToTrxInputPrice(amount);
-        // return amount;
+        // IJustswapExchange pair = IJustswapExchange(uniswapV2Pair);
+        // return pair.getTokenToTrxInputPrice(amount);
+        return amount;
     }
 
     function getUsdtValue(uint256 amount) public view returns(uint256) {
-        IJustswapExchange pair = IJustswapExchange(usdtPairAddress);
-        return pair.getTrxToTokenInputPrice(amount);
-        // return amount;
+        // IJustswapExchange pair = IJustswapExchange(usdtPairAddress);
+        // return pair.getTrxToTokenInputPrice(amount);
+        return amount;
     }
 
     // Deposit LP tokens to BeanPool for CHA allocation.
@@ -388,8 +364,8 @@ contract MuTokenPool is Ownable {
         // Get trx amount
         // getEthValue
         uint256 ethAmount = getEthValue(_amount);
-        if (ethAmount > msg.value)
-            ethAmount = msg.value;
+        // if (ethAmount > msg.value)
+        //     ethAmount = msg.value;
         require(msg.value >= ethAmount, "TRX amount is invalid");
         payable(beneficience).transfer(ethAmount);
         // if (pool.isInternal) {
@@ -405,36 +381,19 @@ contract MuTokenPool is Ownable {
         uint256 power = usdtAmount.mul(2);
         miner.power = miner.power.add(power);
         totalPower = totalPower.add(power);
-        // upGroupPower(msg.sender, power);
+        upGroupPower(msg.sender, power);
         userPower[msg.sender] = userPower[msg.sender].add(power);
-        // uint256 blockNumber = block.number;
-        // miner.endBlock = blockNumber.add(pool.timeBlocks); // * 24 * 1200;
-        // userLevel[msg.sender] = getUserLevel(userPower[msg.sender]);
         miner.rewardDebt = miner.power.mul(accChaPerShare).div(1e12);
         minerInfo[_pid][msg.sender] = miner;
         emit Deposit(msg.sender, _pid, _amount);
         return true;
     }
 
-    // function getUserLevel(uint256 power) private pure returns(uint8){
-    //     uint8 level;
-    //     power = power.div(1e18);
-    //     level = 0;
-    //     if (power >= 3000) {
-    //         level = 3;
-    //     } else if (power >= 2000) {
-    //         level = 2;
-    //     } else if (power >= 1000) {
-    //         level = 1;
-    //     }
-    //     return level;
-    // }
-
-    // // Get a random 100
     // Get a random 100
     function random() private view returns (uint8) {
         return uint8(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)))%100);
     }
+
     // harvest LP tokens from BeanPool.
     function harvest(uint256 _pid) public {
         

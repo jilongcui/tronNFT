@@ -1,11 +1,5 @@
 const port = process.env.HOST_PORT || 9060
-
-module.exports = {
-  networks: {
-    mainnet: {
-      // Don't put your private key here:
-      privateKey: process.env.PRIVATE_KEY_MAINNET,
-      /*
+/*
 Create a .env file (it must be gitignored) containing something like
 
   export PRIVATE_KEY_MAINNET=4E7FECCB71207B867C495B51A9758B104B1D4422088A87F4978BE64636656243
@@ -15,16 +9,24 @@ Then, run the migration with:
   source .env && tronbox migrate --network mainnet
 
 */
+
+module.exports = {
+  networks: {
+    mainnet: {
+      // Don't put your private key here:
+      privateKey: process.env.PRIVATE_KEY_MAINNET,
       userFeePercentage: 100,
-      feeLimit: 1000 * 1e6,
+      feeLimit: 1500 * 1e6,
       fullHost: 'https://api.trongrid.io',
       network_id: '*'
     },
     shasta: {
       privateKey: process.env.PRIVATE_KEY_SHASTA,
-      userFeePercentage: 50,
+      userFeePercentage: 80,
       feeLimit: 1000 * 1e6,
       fullHost: 'https://api.shasta.trongrid.io',
+      timeout: 2000,
+      mnemonic: process.env.MNEMONIC_SHASTA,
       network_id: '2'
     },
     nile: {

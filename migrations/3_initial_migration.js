@@ -118,39 +118,62 @@ module.exports = async function(deployer, network, accounts) {
     let startTimestamp = "1632574800";
     let totalReward = "2880000000000";
     let startBlock = 35277657;
-    deployer.deploy(ERC20ZhiToken, airdropAddress, initSupply, lastRemainSupply, startTimestamp, accounts);
+    // deployer.deploy(ERC20ZhiToken, airdropAddress, initSupply, lastRemainSupply, startTimestamp, accounts);
     // await deployer.link(ERC20ZhiToken, MuTokenPool);
     //.then(async zhiToken => {
-    deployer.deploy(MuTokenPool, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
+    // deployer.deploy(MuTokenPool, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
     //});
     // await sleep(5000);
-    // let zhiToken = await ERC20ZhiToken.deployed();
-    // console.log(zhiToken.address);
+    let zhiToken = await ERC20ZhiToken.deployed();
+    console.log(zhiToken.address);
     // let pool = await MuTokenPool.deployed();
     // console.log(pool.address);
     // await sleep(5000);
     // await deployer.deploy(MuTokenPool, "TMzAxhn1ZgvBR4RsdeVPq6qhUg5svcjaox", FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
-    // let pool = await MuTokenPool.deployed();
-    // console.log(pool.address);
+    let pool = await MuTokenPool.deployed();
+    console.log(pool.address);
     console.log("Pool init start.")
-    MuTokenPool.deployed().then(pool => {
-      ERC20ZhiToken.deployed().then(zhiToken => {
-        console.log("setExcludeFromFee start.")
-        // console.log(zhiToken)
-        // console.log(pool)
-        zhiToken.setExcludeFromFee(pool.address);
-        zhiToken.transfer(pool.address, "1000000000");
-        console.log("balance: ", (zhiToken.balanceOf(pool.address)).toString());
-        console.log("setExcludeFromFee end.")
-      });
-    });
-    // console.log("Pool init 1.")
+    // MuTokenPool.deployed().then(pool => {
+    //   ERC20ZhiToken.deployed().then(zhiToken => {
+    //     console.log("setExcludeFromFee start.")
+    //     // console.log(zhiToken)
+    //     // console.log(pool)
+    //     zhiToken.setExcludeFromFee(pool.address);
+    //     zhiToken.transfer(pool.address, "1000000000");
+    //     console.log("balance: ", (zhiToken.balanceOf(pool.address)).toString());
+    //     console.log("setExcludeFromFee end.")
+    //   });
+    // });
+    console.log("Pool init 1.")
     // await zhiToken.transfer(pool.address, "10000000000");
     // // pool.addPool(rate, token, isLp, dayNum, withUpdate);
     // console.log("Pool init 2.")
     // console.log("balance: ", (await zhiToken.balanceOf(pool.address)).toString());
     // await pool.addPool(1000, zhiToken.address, zeroAddress, true, 3*24*1200, false);
+
+    // await zhiToken.setExcludeFromFee(pool.address);
+    // await pool.setMainToken(zhiToken.address);
+    // await pool.setBeneficience("TXynF4tteSE6aQis6JH6sskEVfcKQk9pRt");
+    await pool.setInviteEnable(false);
+    // await zhiToken.transfer(accounts, "1200000000");
+    const minerInfo = await pool.minerInfo(0, accounts);
+    console.log(minerInfo);
+    const approve = await zhiToken.approve(pool.address, "1000000000000", {from: accounts})
+    console.log(approve);
+    const deposit = await pool.deposit(0, 1000000, {callValue: 10000000, from: accounts});
+    // const deposit = await pool.call("deposit", 0, "1000000", {value: "1000000"})
+    console.log(deposit);
+    // await pool.updateReward();
+    const minerInfo2 = await pool.minerInfo(0, accounts);
+    console.log(minerInfo2);
+
+    const balance = (await  zhiToken.balanceOf(pool.address)).toString();
+    console.log(balance);
+    // assert.equal(minerInfo2.power.toString(), minerInfo.power.toNumber() + 2000000);
+    // await wait(15);
+
     console.log("Pool init end.")
+    
 
   }
 

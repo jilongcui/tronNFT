@@ -42,11 +42,11 @@ contract ERC20ZhiToken is Context, ERC20Burnable, ERC20Pausable, AccessControlEn
     uint256 public initialSupply;
     uint256 public lastRemainSupply;
     uint256 public startTimestamp;
-    bool inSwapAndLiquify;
-    bool public swapAndLiquifyEnabled = false;
-    uint256 level1EthValue;
-    uint256 level2EthValue;
-    uint256 level3EthValue;
+    // bool inSwapAndLiquify;
+    // bool public swapAndLiquifyEnabled = false;
+    // uint256 level1EthValue;
+    // uint256 level2EthValue;
+    // uint256 level3EthValue;
 
     // Fee
     uint256 private blackholeFeeRate = 7;
@@ -54,24 +54,24 @@ contract ERC20ZhiToken is Context, ERC20Burnable, ERC20Pausable, AccessControlEn
     uint256 private airdropFeeRate = 1;
     uint256 private allTxFeeRate = 8; // all up fee.
 
-    uint256 public minTokensSellToAddToLiquidity = 500 * 10**decimals();
+    // uint256 public minTokensSellToAddToLiquidity = 500 * 10**decimals();
 
     // Mapping
     mapping (address => bool) private _isExcludedFromFee;
 
-    event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
-    event SwapAndLiquifyEnabledUpdated(bool enabled);
-    event SwapAndLiquify(
-        uint256 tokensSwapped,
-        uint256 ethReceived,
-        uint256 tokensIntoLiqudity
-    );
+    // event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
+    // event SwapAndLiquifyEnabledUpdated(bool enabled);
+    // event SwapAndLiquify(
+    //     uint256 tokensSwapped,
+    //     uint256 ethReceived,
+    //     uint256 tokensIntoLiqudity
+    // );
     
-    modifier lockTheSwap {
-        inSwapAndLiquify = true;
-        _;
-        inSwapAndLiquify = false;
-    }
+    // modifier lockTheSwap {
+    //     inSwapAndLiquify = true;
+    //     _;
+    //     inSwapAndLiquify = false;
+    // }
 
     /**
      * @dev Mints `initialSupply` amount of token and transfers them to `owner`.
@@ -98,9 +98,9 @@ contract ERC20ZhiToken is Context, ERC20Burnable, ERC20Pausable, AccessControlEn
         startTimestamp = _startTimestamp;
         initialSupply = _initialSupply * (10**decimals());
         lastRemainSupply = _lastRemainSupply * (10**decimals());
-        level1EthValue = 1.3e18;
-        level2EthValue = 3.9e18;
-        level3EthValue = 7.8e18;
+        // level1EthValue = 1.3e18;
+        // level2EthValue = 3.9e18;
+        // level3EthValue = 7.8e18;
         
         // uniswapV2Router = IUniswapV2Router02(pancakeRouter);
         // nftToken = new ERC721Card(msg.sender, "MagicBean NFT", "BEANNFT", "https://api.magicbean.cc/tokens/");
@@ -116,9 +116,9 @@ contract ERC20ZhiToken is Context, ERC20Burnable, ERC20Pausable, AccessControlEn
     }
 
     // Get a random 1000
-    function random() internal view returns (uint8) {
-        return uint8(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)))%1000);
-    }
+    // function random() internal view returns (uint8) {
+    //     return uint8(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)))%1000);
+    // }
 
     function transfer(
         address to,
@@ -307,9 +307,9 @@ contract ERC20ZhiToken is Context, ERC20Burnable, ERC20Pausable, AccessControlEn
         _isExcludedFromFee[account] = false;
     }
     
-    function setBlackholeFeePercent(uint256 blackholeFee) external onlyOwner() {
-        blackholeFeeRate = blackholeFee;
-    }
+    // function setBlackholeFeePercent(uint256 blackholeFee) external onlyOwner() {
+    //     blackholeFeeRate = blackholeFee;
+    // }
 
     function isExcludedFromFee(address account) public view returns(bool) {
         return _isExcludedFromFee[account];
@@ -323,27 +323,27 @@ contract ERC20ZhiToken is Context, ERC20Burnable, ERC20Pausable, AccessControlEn
     //     _holderBonusFee = holderBonusFee;
     // }
 
-    function setAirdropFeePercent(uint256 airdropFee) external onlyOwner() {
-        airdropFeeRate = airdropFee;
-    }
+    // function setAirdropFeePercent(uint256 airdropFee) external onlyOwner() {
+    //     airdropFeeRate = airdropFee;
+    // }
 
     function setStartTimestamp(uint256 timestamp) external onlyOwner() {
         startTimestamp = timestamp;
     }
 
-    function setNftLevelEthValue(uint256 level1, uint256 level2, uint256 level3) external onlyOwner(){
-        level1EthValue = level1;
-        level2EthValue = level2;
-        level3EthValue = level3;
-    }
+    // function setNftLevelEthValue(uint256 level1, uint256 level2, uint256 level3) external onlyOwner(){
+    //     level1EthValue = level1;
+        // level2EthValue = level2;
+        // level3EthValue = level3;
+    // }
     
     // function setLiquidityFeePercent(uint256 liquidityFee) external onlyOwner() {
     //     liquidityFeeRate = liquidityFee;
     // }
 
-    function setMinTokenAddLiquidity(uint256 minTokenAddLiquidity) external onlyOwner() {
-        minTokensSellToAddToLiquidity = minTokenAddLiquidity;
-    }
+    // function setMinTokenAddLiquidity(uint256 minTokenAddLiquidity) external onlyOwner() {
+        // minTokensSellToAddToLiquidity = minTokenAddLiquidity;
+    // }
 
     // function setSwapAndLiquifyEnabled(bool enabled) public onlyOwner {
     //     if (uniswapV2Pair == address(0)) {
