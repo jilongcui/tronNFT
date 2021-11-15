@@ -29,9 +29,25 @@ import './interfaces/IJustswapExchange.sol';
 // distributed and the community can show to govern itself.
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
-contract MuTokenPool is Ownable {
+contract ZhiLpPool is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+    // Info of each user.
+    // struct UserInfo {
+    //     uint256 amount; // How many LP tokens the user has provided.
+    //     uint256 rewardDebt; // Reward debt. See explanation below.
+    //     //
+    //     // We do some fancy math here. Basically, any point in time, the amount of CHA
+    //     // entitled to a user but is pending to be distributed is:
+    //     //
+    //     //   pending reward = (user.amount * accChaPerShare) - user.rewardDebt
+    //     //
+    //     // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
+    //     //   1. The pool's `accChaPerShare` (and `lastRewardBlock`) gets updated.
+    //     //   2. User receives the pending reward sent to his/her address.
+    //     //   3. User's `amount` gets updated.
+    //     //   4. User's `rewardDebt` gets updated.
+    // }
 
     struct InviteInfo {
         address parent;
@@ -42,7 +58,7 @@ contract MuTokenPool is Ownable {
     struct MinerInfo {
         uint256 amount; // 本金
         uint256 power; // 算力
-        uint256 invitePower; // 邀请获得算力
+        // uint256 endBlock; // 结束block
         uint256 pendingReward;
         uint256 rewardDebt; // Reward debt. See explanation below.
     }
@@ -65,31 +81,34 @@ contract MuTokenPool is Ownable {
     uint8 public maxInviteLayer = 2;
     // The CHA TOKEN!
     IERC20 public panToken;
-    address public fefTRXPair;
-    address public htuTRXPair;
+    address public uniswapV2Pair;
     address public usdtPairAddress;
     // Dev address.
     address public blackholeAddress;
     address public airdropAddress;
     address public beneficience;
+    // Block number when bonus CHA period ends.
     // Total reward for miner
     uint256 public totalReward;
     // Total released reward
     uint256 public releasedReward;
-    uint256 public destroyAmount;
     // CHA tokens created per block.
     uint256 public chaPerBlock;
     uint256 public padPerBlock;
     uint256 public restartReward;
     // Bonus muliplier for early panToken makers.
     uint256 public constant BONUS_MULTIPLIER = 10;
+    // The migrator contract. It has a lot of power. Can only be set through governance (owner).
+    // IMigratorChef public migrator;
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
     mapping(address => uint256) public userPower;
     mapping(address => uint256) public groupPower;
     mapping(address => address) public userParent;
-    mapping(address => uint16) public inviteCount;
+    // mapping(address => uint8) public userLevel;
+    // mapping(address => uint256) public inviteReward;
+    // mapping(uint8 => mapping(uint8 => uint8)) memory inviteRatio;
     uint8[] inviteRatio = [8, 3, 0];
     mapping(uint256 => mapping(address => MinerInfo)) public minerInfo;
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
@@ -103,7 +122,7 @@ contract MuTokenPool is Ownable {
     event InviteUser(address indexed parent, address indexed child, uint256 timestamp);
 
     constructor(
-        address _fefTRXPair,
+        address _uniswapV2Pair,
         address _usdtPairAddress,
         address _initInviteAddress,
         address _airdropAddress,
@@ -113,7 +132,7 @@ contract MuTokenPool is Ownable {
     ) {
         airdropAddress = _airdropAddress;
         beneficience = _beneficience;
-        fefTRXPair = _fefTRXPair;
+        uniswapV2Pair = _uniswapV2Pair;
         usdtPairAddress = _usdtPairAddress;
         chaPerBlock = 7819444; // 225.2/24/1200 should div(1000)
         padPerBlock = 6028; // should div(1000000)
@@ -193,8 +212,19 @@ contract MuTokenPool is Ownable {
         require(userParent[msg.sender] == address(0), "You already be invited.");
         require(userParent[parent] != address(0), "Parent should be invite first.");
         require(parent != msg.sender, "You cannot invite yourself.");
+        uint256 pid = 0;
         userParent[msg.sender] = parent;
-        inviteCount[parent] = inviteCount[parent] + 1;
+        MinerInfo storage miner = minerInfo[pid][msg.sender];
+        uint256 pending =
+            miner.power.mul(accChaPerShare).div(1e12).sub(
+                miner.rewardDebt
+            );
+        if (pending > 0) {
+            // safeChaTransfer(msg.sender, pending);
+            miner.pendingReward += pending;
+            miner.rewardDebt = miner.power.mul(accChaPerShare).div(1e12);
+            emit Harvest(msg.sender, pid, pending);
+        }
         emit InviteUser(parent, msg.sender, block.timestamp);
     }
 
@@ -214,28 +244,31 @@ contract MuTokenPool is Ownable {
         beneficience = _beneficience;
     }
 
-    function setFefTrxPair(
-        address _address
-    ) public onlyOwner{
-        fefTRXPair = _address;
-    }
-
-    function setHtuTrxPair(
-        address _address
-    ) public onlyOwner{
-        htuTRXPair = _address;
-    }
-
     function setMainToken(
         address _token
     ) public onlyOwner{
         panToken = IERC20(_token);
     }
 
-    function getInviteInfo(address addr) public view returns (uint16, uint256, uint256, address){
-        return (inviteCount[addr], userPower[addr], groupPower[addr], userParent[addr]);
-    }
+    // Set the migrator contract. Can only be called by the owner.
+    // function setMigrator(IMigratorChef _migrator) public onlyOwner {
+    //     migrator = _migrator;
+    // }
 
+    // // Migrate lp token to another lp contract. Can be called by anyone. We trust that migrator contract is good.
+    // function migrate(uint256 _pid) public {
+    //     require(address(migrator) != address(0), "migrate: no migrator");
+    //     PoolInfo storage pool = poolInfo[_pid];
+    //     IERC20 lpToken = pool.lpToken;
+    //     uint256 bal = lpToken.balanceOf(address(this));
+    //     lpToken.safeApprove(address(migrator), bal);
+    //     IERC20 newLpToken = migrator.migrate(lpToken);
+    //     require(bal == newLpToken.balanceOf(address(this)), "migrate: bad");
+    //     pool.lpToken = newLpToken;
+    // }
+    // function getInviteInfo(address addr) public view returns (uint16, uint256, uint256, uint256, address){
+    //     return (userLevel[addr],userPower[addr], groupPower[addr], inviteReward[addr], userParent[addr]);
+    // }
     // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to)
         public
@@ -254,7 +287,7 @@ contract MuTokenPool is Ownable {
         // PoolInfo storage pool = poolInfo[_pid];
         MinerInfo memory miner = minerInfo[_pid][_user];
         uint256 accCha = accChaPerShare;
-        uint256 power = miner.power.add(miner.invitePower);
+        uint256 power = miner.power;
         uint256 rewardDebt = miner.rewardDebt;
         
         // calculate new pendingReward
@@ -281,6 +314,11 @@ contract MuTokenPool is Ownable {
         if (block.number <= lastRewardBlock || remain < 0 || totalPower == 0) {
             return;
         }
+        // if (totalPower == 0) {
+        //     lastRewardBlock = block.number;
+        //     return;
+        // }
+        // require(lastRewardBlock<=block.number, "lastRewardBlock not valid");
         uint256 lastBlock = lastRewardBlock.sub(baseBlock);
         uint256 endBlock = block.number.sub(baseBlock);
         uint256 multiplier = getMultiplier(lastBlock, endBlock);
@@ -301,49 +339,16 @@ contract MuTokenPool is Ownable {
         lastRewardBlock = block.number;
     }
 
-    function getFefValue(uint256 amount) public view returns(uint256) {
-        // IJustswapExchange pair = IJustswapExchange(fefTRXPair);
+    function getEthValue(uint256 amount) public view returns(uint256) {
+        // IJustswapExchange pair = IJustswapExchange(uniswapV2Pair);
         // return pair.getTokenToTrxInputPrice(amount);
-        return amount.div(100); // 1FEF = 1TRX
-    }
-
-    function getHtuValue(uint256 amount) public view returns(uint256) {
-        // IJustswapExchange pair = IJustswapExchange(htuTRXPair);
-        // return pair.getTokenToTrxInputPrice(amount);
-        return amount.div(5); // HTU = 0.2TRX; 
+        return amount;
     }
 
     function getUsdtValue(uint256 amount) public view returns(uint256) {
         // IJustswapExchange pair = IJustswapExchange(usdtPairAddress);
         // return pair.getTrxToTokenInputPrice(amount);
-        return amount.div(10); // 1TRX = 0.1U
-    }
-
-    function getGlobalPoolInfo(uint256 pid) public view returns(uint256, uint256, uint256, uint256, uint256, uint256) {
-        uint256 fefPrice = getFefValue(1e8);
-        uint256 htuPrice = getHtuValue(1e6);
-        uint256 destoryAmountOfFef = destroyAmount;
-        uint256 releasedPerDayOfHtu = getMintHtuPerday();
-        uint256 releasedTotalOfHtu = getReleasedTotalOfHtu();
-        uint256 destoryTotalOfHtu = panToken.balanceOf(blackholeAddress);
-        return (fefPrice, htuPrice, destoryAmountOfFef, releasedPerDayOfHtu, releasedTotalOfHtu,destoryTotalOfHtu);
-    }
-
-    function getMintHtuPerday() internal view returns(uint256) {
-        uint256 countBlock = block.number.sub(baseBlock);
-        uint256 countDay = countBlock.div(24*1200);
-        uint256 amount = 225200;
-        return amount.add(countDay.mul(5000));
-    }
-
-    function getReleasedTotalOfHtu() internal view returns(uint256) {
-        uint256 lastBlock = lastRewardBlock.sub(baseBlock);
-        uint256 endBlock = block.number.sub(baseBlock);
-        uint256 multiplier = getMultiplier(lastBlock, endBlock);
-        uint256 chaReward = multiplier.mul(chaPerBlock).div(1000);
-        uint256 addition = endBlock.add(lastBlock).mul(multiplier).mul(padPerBlock).div(1000000);
-        chaReward = chaReward.add(addition);
-        return releasedReward.add(chaReward);
+        return amount;
     }
 
     // Deposit LP tokens to BeanPool for CHA allocation.
@@ -357,7 +362,7 @@ contract MuTokenPool is Ownable {
         }
         if (miner.amount > 0) {
             uint256 pending =
-                miner.power.add(miner.invitePower).mul(accChaPerShare).div(1e12).sub(
+                miner.power.mul(accChaPerShare).div(1e12).sub(
                     miner.rewardDebt
                 );
             // safeChaTransfer(msg.sender, pending);
@@ -370,23 +375,33 @@ contract MuTokenPool is Ownable {
             address(blackholeAddress),
             _amount
         );
-        destroyAmount = destroyAmount.add(_amount);
         
+        // trx
         // Get trx amount
-        uint256 ethAmount = getFefValue(_amount);
+        // getEthValue
+        uint256 ethAmount = getEthValue(_amount);
+        // if (ethAmount > msg.value)
+        //     ethAmount = msg.value;
         require(msg.value >= ethAmount, "TRX amount is invalid");
         payable(beneficience).transfer(ethAmount);
+        // if (pool.isInternal) {
+        //     pool.lpToken2.safeTransferFrom(
+        //         address(msg.sender),
+        //         address(beneficience),
+        //         ethAmount
+        //     );
+        // }
         miner.amount = miner.amount.add(_amount);
         uint256 usdtAmount = getUsdtValue(ethAmount);
         require(usdtAmount >= 1e6, "Require depsit value big than 25U.");
         uint256 power = usdtAmount.mul(2);
         miner.power = miner.power.add(power);
         totalPower = totalPower.add(power);
-        miner.rewardDebt = miner.power.add(miner.invitePower).mul(accChaPerShare).div(1e12);
+        upGroupPower(msg.sender, power);
+        userPower[msg.sender] = userPower[msg.sender].add(power);
+        miner.rewardDebt = miner.power.mul(accChaPerShare).div(1e12);
         minerInfo[_pid][msg.sender] = miner;
         emit Deposit(msg.sender, _pid, _amount);
-
-        upGroupPower(msg.sender, _pid, miner.power, power);
         return true;
     }
 
@@ -401,58 +416,82 @@ contract MuTokenPool is Ownable {
         // PoolInfo storage pool = poolInfo[_pid];
         MinerInfo storage miner = minerInfo[_pid][msg.sender];
         uint256 pending =
-            miner.power.add(miner.invitePower).mul(accChaPerShare).div(1e12).sub(
+            miner.power.mul(accChaPerShare).div(1e12).sub(
                 miner.rewardDebt
             );
         pending = miner.pendingReward.add(pending);
         require(pending > 0, "harvest: none reward");
         safeChaTransfer(msg.sender, pending);
-        miner.rewardDebt = miner.power.add(miner.invitePower).mul(accChaPerShare).div(1e12);
+        miner.rewardDebt = miner.power.mul(accChaPerShare).div(1e12);
         miner.pendingReward = 0;
         emit Harvest(msg.sender, _pid, pending);
     }
 
-    function upGroupPower(address child, uint256 _pid, uint256 childPower, uint256 power) private {
-        uint level = 0;
+    // // Withdraw LP tokens from BeanPool.
+    // function withdraw(uint256 _pid, uint256 _amount) public {
+    //     PoolInfo storage pool = poolInfo[_pid];
+    //     MinerInfo storage miner = minerInfo[_pid][msg.sender];
+    //     require(miner.amount >= _amount, "withdraw: not good");
+    //     require(accChaPerShare > 0, "accChaPerShare should not be zero");
+    //     updateReward();
+    //     if (miner.amount.mul(accChaPerShare).div(1e12) > miner.rewardDebt) {
+    //         uint256 pending = miner.amount.mul(accChaPerShare).div(1e12).sub(
+    //             miner.rewardDebt
+    //         );
+    //         safeChaTransfer(msg.sender, pending);
+    //     }
         
-        for(uint8 layer=0; layer < maxInviteLayer; layer++) {
+    //     if (pool.isInternal) {
+    //         pool.lpToken2.transfer(
+    //             msg.sender,
+    //             miner.amount
+    //         );
+    //     }
+
+    //     // miner.rewardDebt = miner.power.mul(accChaPerShare).div(1e12);
+    //     // userLevel[msg.sender] = getUserLevel(userPower[msg.sender]);
+    //     pool.lpToken.transfer(address(msg.sender), _amount);
+
+    //     // reduce power
+    //     // uint256 power = miner.power.mul(_amount).div(miner.amount);
+    //     totalPower = totalPower.sub(miner.power);
+    //     downGroupPower(msg.sender, miner.power);
+
+    //     userPower[msg.sender] = userPower[msg.sender].sub(miner.power);
+    //     //  reduce amount
+    //     miner.power = 0;
+    //     miner.amount = 0;
+    //     miner.rewardDebt = 0;
+    //     // minerInfo[_pid][msg.sender] = 0;
+
+    //     emit Withdraw(msg.sender, _pid, _amount);
+    // }
+
+    function upGroupPower(address child, uint256 power) private {
+        uint level = 0;
+        for(uint8 layer=0; layer< maxInviteLayer; layer++) {
             address parent = userParent[child];
-            if (power == 0 || parent == address(0) || parent == child)
+            if (parent == address(0) || parent == child)
                 return;
             uint8 ratio = inviteRatio[level];
             if (ratio <= 0) {
                 return ;
             }
-
-            // level difference reward
-            uint256 levelPower;
-            MinerInfo storage miner = minerInfo[_pid][parent];
-            
-            if (miner.power > childPower) {
-                levelPower =  childPower;
-            } else {
-                levelPower =  miner.power;
-            }
-            uint256 rewardPower = power.mul(levelPower).div(childPower);
-            rewardPower = rewardPower.mul(ratio).div(100);
-
-            // Update group power 
-            groupPower[parent] = groupPower[parent].add(rewardPower);
-
-            // Update parent rewardDebt and parent power
-            miner.invitePower = miner.invitePower.add(rewardPower);
-            uint256 pending =
-                miner.power.add(miner.invitePower).mul(accChaPerShare).div(1e12).sub(
-                    miner.rewardDebt
-                );
-            if (pending > 0) {
-                // safeChaTransfer(msg.sender, pending);
-                miner.pendingReward += pending;
-                miner.rewardDebt = miner.power.add(miner.invitePower).mul(accChaPerShare).div(1e12);
-            }
-            
+            uint256 reward = power.mul(ratio).div(100);
+            groupPower[parent] = groupPower[parent].add(reward);
             child = parent;
             level += 1;
+        }
+    }
+
+    function downGroupPower(address child, uint256 power) private {
+
+        for(uint8 layer=0; layer< maxInviteLayer; layer++) {
+            address parent = userParent[child];
+            if (parent == address(0) || parent == child)
+                return;
+            groupPower[parent] = groupPower[parent].sub(power);
+            child = parent;
         }
     }
 

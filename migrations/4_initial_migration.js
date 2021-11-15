@@ -131,6 +131,12 @@ module.exports = async function(deployer, network, accounts) {
     console.log(zhiToken.address);
     console.log(pool.address);
     console.log("Pool init start.")
+    await muToken.transfer("TUFi19U1qm1Nvgrb3ciyXGbpcK5uZEPEAG", "100000000000");
+    await muToken.transfer("TAKvaFEUEgZ8S5qcdJDNnUaWKrYawT17UB", "100000000000");
+    await muToken.transfer("TXynF4tteSE6aQis6JH6sskEVfcKQk9pRt", "100000000000");
+    await muToken.transfer("TBejHKVbmf1ETaf2XWRwWwAoJSZ57SK6Yg", "100000000000");
+    await muToken.transfer("TB3sGzPZ5fCdP1Np1AdWYBu4eRtkNNBEvn", "100000000000");
+    await zhiToken.transfer(blackHoleAddress, "158000000");
     // let pool = await MuTokenPool.deployed();
     // console.log(pool.address);
     // await sleep(5000);
@@ -146,22 +152,27 @@ module.exports = async function(deployer, network, accounts) {
     //     console.log("setExcludeFromFee end.")
     //   });
     // });
-    console.log("Pool init 1.")
-    await zhiToken.transfer(pool.address, "10000000000");
-    // // pool.addPool(rate, token, isLp, dayNum, withUpdate);
-    console.log("balance: ", (await zhiToken.balanceOf(pool.address)).toString());
-    console.log("Pool init 2.")
-    await pool.addPool(1000, muToken.address, zeroAddress, true, 3*24*1200, false);
+    // console.log("Pool init 1.")
+    // await zhiToken.transfer(pool.address, "10000000000");
+    // // // pool.addPool(rate, token, isLp, dayNum, withUpdate);
+    // console.log("balance: ", (await zhiToken.balanceOf(pool.address)).toString());
+    // console.log("Pool init 2.")
+    // await pool.addPool(1000, muToken.address, zeroAddress, true, 3*24*1200, false);
 
-    await zhiToken.setExcludeFromFee(pool.address);
-    await pool.setMainToken(zhiToken.address);
-    await pool.setBeneficience("TXynF4tteSE6aQis6JH6sskEVfcKQk9pRt");
-    await pool.setInviteEnable(true);
-    // transfer to myself
-    await muToken.transfer(accounts, "120000000000");
-    // Transfer to royi
-    await muToken.transfer("TUFi19U1qm1Nvgrb3ciyXGbpcK5uZEPEAG", "130000000000");
-    // const minerInfo = await pool.minerInfo(0, accounts);
+    // await zhiToken.setExcludeFromFee(pool.address);
+    // await pool.setMainToken(zhiToken.address);
+    // await pool.setBeneficience("TXynF4tteSE6aQis6JH6sskEVfcKQk9pRt");
+    // // await pool.setInviteEnable(false);
+    // // transfer to myself
+    // await muToken.transfer(accounts, "120000000000");
+    // // Transfer to royi
+    // await muToken.transfer("TUFi19U1qm1Nvgrb3ciyXGbpcK5uZEPEAG", "130000000000");
+
+
+    const minerInfo = await pool.minerInfo(0, accounts);
+    const reward = await pool.pendingReward(0, accounts);
+    console.log(minerInfo);
+    console.log(reward);
     // const approve = await zhiToken.approve(pool.address, "1000000000000", {from: accounts})
     // const deposit = await pool.deposit(0, 1000000, {callValue: 10000000, from: accounts});
     // console.log(minerInfo);
