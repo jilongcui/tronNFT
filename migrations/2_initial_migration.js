@@ -121,7 +121,7 @@ module.exports = async function(deployer, network, accounts) {
     let startBlock = 	19889000;
     deployer.deploy(ERC20ZhiToken, airdropAddress, initSupply, lastRemainSupply, startTimestamp, accounts);
     deployer.deploy(ERC20MuToken, initMuSupply, accounts);
-    deployer.deploy(MuTokenPool, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
+    deployer.deploy(MuTokenPool, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
     // await sleep(5000);
     // let zhiToken = await ERC20ZhiToken.deployed();
     // console.log(zhiToken.address);
@@ -188,7 +188,7 @@ module.exports = async function(deployer, network, accounts) {
     // ERC20MuToken.resetAddress();
     deployer.deploy(ERC20ZhiToken, airdropAddress, initSupply, lastRemainSupply, startTimestamp, accounts);
     deployer.deploy(ERC20MuToken, initMuSupply, accounts);
-    deployer.deploy(MuTokenPool, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
+    deployer.deploy(MuTokenPool, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
     // deployer.link(ERC20ZhiToken, MuTokenPool);
     // ERC20ZhiToken.deployed().then(zhiToken => {
     // await deployer.deploy(MuTokenPool, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);

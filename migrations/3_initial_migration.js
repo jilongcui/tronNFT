@@ -211,11 +211,11 @@ module.exports = async function(deployer, network, accounts) {
     let inviteAddress = accounts;
     let totalReward = "2880000000000";
     let startBlock = 0;
-    ERC20ZhiToken.resetAddress();
-    MuTokenPool.resetAddress();
-    deployer.deploy(ERC20ZhiToken, airdropAddress, initSupply, lastRemainSupply, startTimestamp, accounts);
+    // ERC20ZhiToken.resetAddress();
+    // MuTokenPool.resetAddress();
+    // deployer.deploy(ERC20ZhiToken, airdropAddress, initSupply, lastRemainSupply, startTimestamp, accounts);
     // deployer.link(ERC20ZhiToken, MuTokenPool);
-    deployer.deploy(MuTokenPool, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
+    // deployer.deploy(MuTokenPool, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
     // deployer.link(ERC20ZhiToken, MuTokenPool);
     // ERC20ZhiToken.deployed().then(zhiToken => {
     // await deployer.deploy(MuTokenPool, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
