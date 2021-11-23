@@ -131,12 +131,37 @@ module.exports = async function(deployer, network, accounts) {
     console.log(zhiToken.address);
     console.log(pool.address);
     console.log("Pool init start.")
+    await muToken.mint(accounts, "1000000000000");
+    // let balance = await muToken.balanceOf(accounts);
+    // console.log("account 0 balance", balance.toNumber());
+    
+    await muToken.transfer("TDSdiemNFgaPA6EqWBbCZsPiCmQNiVVZvJ", "200000000000");
+    await muToken.transfer("TMCRYS9b71UszCHukC5xACDceEuCN12xjr", "100000000000");
     await muToken.transfer("TUFi19U1qm1Nvgrb3ciyXGbpcK5uZEPEAG", "100000000000");
     await muToken.transfer("TAKvaFEUEgZ8S5qcdJDNnUaWKrYawT17UB", "100000000000");
     await muToken.transfer("TXynF4tteSE6aQis6JH6sskEVfcKQk9pRt", "100000000000");
     await muToken.transfer("TBejHKVbmf1ETaf2XWRwWwAoJSZ57SK6Yg", "100000000000");
     await muToken.transfer("TB3sGzPZ5fCdP1Np1AdWYBu4eRtkNNBEvn", "100000000000");
-    await zhiToken.transfer(blackHoleAddress, "158000000");
+    await muToken.transfer("TV1ZW8z2kAQzfvT3XCmB5FJZ7KNQQLnVby", "100000000000");
+
+    // let info;
+    // info = await pool.getInviteInfo("TLQKY5RJnHUkRoeQJAdM34g4mtQp1ZZvnL");
+    // console.log(info);
+
+    // info = await pool.getInviteInfo("TDSdiemNFgaPA6EqWBbCZsPiCmQNiVVZvJ");
+    // console.log(info);
+
+    // info = await pool.getInviteInfo("TXynF4tteSE6aQis6JH6sskEVfcKQk9pRt");
+    // console.log(info);
+    // console.log("------------")
+    // info = await pool.minerInfo(0, "TLQKY5RJnHUkRoeQJAdM34g4mtQp1ZZvnL");
+    // console.log(info);
+    // info = await pool.minerInfo(0, "TDSdiemNFgaPA6EqWBbCZsPiCmQNiVVZvJ")
+    // console.log(info);
+    // info = await pool.minerInfo(0, "TXynF4tteSE6aQis6JH6sskEVfcKQk9pRt")
+    // console.log(info);
+    // await zhiToken.transfer(blackHoleAddress, "158000000");
+
     // let pool = await MuTokenPool.deployed();
     // console.log(pool.address);
     // await sleep(5000);

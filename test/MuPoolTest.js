@@ -279,7 +279,8 @@ contract("MuTokenPool", function (accounts) {
     console.log(invite0[2].toNumber());
     const invite1 = await pool.getInviteInfo(accounts[2]);
     console.log(invite1[2].toNumber());
-    assert.isTrue(invite0[1].toNumber() >= invite1[1].toNumber());
+    assert.isTrue(invite0[1].toNumber() >= 0);
+    assert.isTrue(invite0[2].toNumber() >= invite1[2].toNumber());
   })
 
   // it("Test deposit with amount 1 from account2", async function() {

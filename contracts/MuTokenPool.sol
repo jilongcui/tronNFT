@@ -96,6 +96,8 @@ contract MuTokenPool is Ownable {
     uint256 public totalAllocPoint = 0;
     // The block number when CHA mining starts.
     uint256 public initBlock;
+    uint256 public initTimestamp;
+    uint256 public havestDelay;
     uint256 public baseBlock;
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -121,6 +123,8 @@ contract MuTokenPool is Ownable {
         blackholeAddress = address(0x000000000000000000000000000000000000dEaD);
         
         totalReward = _totalReward;
+        initTimestamp = block.timestamp;
+        havestDelay = 7*24*3600;
         lastRewardBlock =
             block.number > _initBlock ? block.number : _initBlock;
         initBlock = lastRewardBlock;
@@ -232,6 +236,12 @@ contract MuTokenPool is Ownable {
         panToken = IERC20(_token);
     }
 
+    function setHavestDelay(
+        uint256 delay
+    ) public onlyOwner{
+        havestDelay = delay;
+    }
+
     function getInviteInfo(address addr) public view returns (uint16, uint256, uint256, address){
         return (inviteCount[addr], userPower[addr], groupPower[addr], userParent[addr]);
     }
@@ -304,7 +314,7 @@ contract MuTokenPool is Ownable {
     function getFefValue(uint256 amount) public view returns(uint256) {
         // IJustswapExchange pair = IJustswapExchange(fefTRXPair);
         // return pair.getTokenToTrxInputPrice(amount);
-        return amount.div(100); // 1FEF = 1TRX
+        return amount.div(50); // 1FEF = 1TRX
     }
 
     function getHtuValue(uint256 amount) public view returns(uint256) {
@@ -381,6 +391,7 @@ contract MuTokenPool is Ownable {
         require(usdtAmount >= 1e6, "Require depsit value big than 25U.");
         uint256 power = usdtAmount.mul(2);
         miner.power = miner.power.add(power);
+        userPower[msg.sender] = userPower[msg.sender].add(power);
         totalPower = totalPower.add(power);
         miner.rewardDebt = miner.power.add(miner.invitePower).mul(accChaPerShare).div(1e12);
         minerInfo[_pid][msg.sender] = miner;
@@ -398,6 +409,8 @@ contract MuTokenPool is Ownable {
     // harvest LP tokens from BeanPool.
     function harvest(uint256 _pid) public {
         updateReward();
+        require (block.timestamp - initTimestamp >= havestDelay, "time limit for 7day");
+
         // PoolInfo storage pool = poolInfo[_pid];
         MinerInfo storage miner = minerInfo[_pid][msg.sender];
         uint256 pending =
