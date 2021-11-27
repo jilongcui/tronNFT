@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "../extensions/ERC20Burnable.sol";
-// import "../../ERC721/utils/ERC721Holder.sol";
 import "../../../access/Ownable.sol";
 import "../../../utils/math/SafeMath.sol";
 import "../../../utils/Address.sol";
@@ -22,7 +21,7 @@ import "../../../access/AccessControlEnumerable.sol";
  * _Available since v3.4._
  */
 
-contract ERC20MuToken is Context, ERC20Burnable, ERC20Pausable, AccessControlEnumerable, Ownable {
+contract ERC20MuToken is Context, ERC20Burnable, AccessControlEnumerable, Ownable {
     using SafeMath for uint256;
     using Address for address;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -46,13 +45,12 @@ contract ERC20MuToken is Context, ERC20Burnable, ERC20Pausable, AccessControlEnu
     ) ERC20("MyMu Token", "MyMu") {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(MINTER_ROLE, _msgSender());
-        _setupRole(PAUSER_ROLE, _msgSender());
         initialSupply = _initialSupply * (10**decimals());
 
         _mint(owner, initialSupply);
     }
     function decimals() public view virtual override returns (uint8) {
-        return 6;
+        return 8;
     }
 
     function transfer(
@@ -65,7 +63,6 @@ contract ERC20MuToken is Context, ERC20Burnable, ERC20Pausable, AccessControlEnu
     
         _transfer(msg.sender, to, amount);
         return true;
-        
     }
 
     function transferFrom(
@@ -91,41 +88,5 @@ contract ERC20MuToken is Context, ERC20Burnable, ERC20Pausable, AccessControlEnu
     function mint(address to, uint256 amount) public virtual {
         require(hasRole(MINTER_ROLE, _msgSender()), "ERC20PresetMinterPauser: must have minter role to mint");
         _mint(to, amount);
-    }
-
-    /**
-     * @dev Pauses all token transfers.
-     *
-     * See {ERC20Pausable} and {Pausable-_pause}.
-     *
-     * Requirements:
-     *
-     * - the caller must have the `PAUSER_ROLE`.
-     */
-    function pause() public virtual {
-        require(hasRole(PAUSER_ROLE, _msgSender()), "ERC20PresetMinterPauser: must have pauser role to pause");
-        _pause();
-    }
-
-    /**
-     * @dev Unpauses all token transfers.
-     *
-     * See {ERC20Pausable} and {Pausable-_unpause}.
-     *
-     * Requirements:
-     *
-     * - the caller must have the `PAUSER_ROLE`.
-     */
-    function unpause() public virtual {
-        require(hasRole(PAUSER_ROLE, _msgSender()), "ERC20PresetMinterPauser: must have pauser role to unpause");
-        _unpause();
-    }
-
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override(ERC20, ERC20Pausable) {
-        super._beforeTokenTransfer(from, to, amount);
     }
 }

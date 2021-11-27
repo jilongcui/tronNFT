@@ -6,6 +6,7 @@ import "./utils/Address.sol";
 import "./access/Ownable.sol";
 
 import "./token/ERC20/IERC20.sol";
+import "./token/ERC20/extensions/ERC20Burnable.sol";
 import "./token/ERC20/utils/SafeERC20.sol";
 import './interfaces/IJustswapExchange.sol';
 
@@ -33,72 +34,66 @@ contract MuTokenPool is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    struct InviteInfo {
-        address parent;
-        uint256 totalPower;
-    }
+    // struct InviteInfo {
+    //     address parent;
+    //     uint256 totalPower;
+    // }
 
     // Miner information describe miner. One should has many Miners;
     struct MinerInfo {
-        uint256 amount; // 本金
-        uint256 power; // 算力
+        uint256 amount;      // 本金
+        uint256 power;       // 算力
         uint256 invitePower; // 邀请获得算力
         uint256 pendingReward;
-        uint256 rewardDebt; // Reward debt. See explanation below.
+        uint256 rewardDebt;  // Reward debt. See explanation below.
     }
+
     // Info of each pool. pool is set manully.
     struct PoolInfo {
-        IERC20 lpToken; // Address of LP token contract.
-        IERC20 lpToken2; // Address of LP token contract.
-        bool isInternal; // if isInternal is true we should have a usdt token.
-        uint32 timeBlocks; // timeBlocks;
-        uint256 powerRate; // The power rate assigned to this pool. times 1000.
+        ERC20Burnable lpToken;      // Address of LP token contract.
+        IERC20 lpToken2;     // Address of LP token contract.
+        bool isInternal;     // if isInternal is true we should have a usdt token.
+        uint32 timeBlocks;   // timeBlocks;
+        uint256 powerRate;   // The power rate assigned to this pool. times 1000.
     }
     
-    uint256 public lastRewardBlock; // Last block number that CHAs distribution occurs.
-    uint256 public accChaPerShare; // Accumulated CHAs per share, times 1e12. See below.
-    // Total power
-    uint256 public totalPower;
+    PoolInfo[] public poolInfo;
+    uint8[] public inviteRatio = [8, 3, 0];
 
-    // Invite
-    bool public inviteForce = false;
+    bool public inviteForce = true;
+    bool public active = false;
     uint8 public maxInviteLayer = 2;
-    // The CHA TOKEN!
+
     IERC20 public panToken;
     address public fefTRXPair;
     address public htuTRXPair;
     address public usdtPairAddress;
-    // Dev address.
     address public blackholeAddress;
     address public airdropAddress;
     address public beneficience;
-    // Total reward for miner
-    uint256 public totalReward;
-    // Total released reward
-    uint256 public releasedReward;
-    uint256 public destroyAmount;
-    // CHA tokens created per block.
-    uint256 public chaPerBlock;
-    uint256 public padPerBlock;
-    uint256 public restartReward;
-    // Bonus muliplier for early panToken makers.
-    uint256 public constant BONUS_MULTIPLIER = 10;
-    // Info of each pool.
-    PoolInfo[] public poolInfo;
-    // Info of each user that stakes LP tokens.
-    mapping(address => uint256) public userPower;
-    mapping(address => uint256) public groupPower;
-    mapping(address => address) public userParent;
-    mapping(address => uint16) public inviteCount;
-    uint8[] inviteRatio = [8, 3, 0];
-    mapping(uint256 => mapping(address => MinerInfo)) public minerInfo;
-    // Total allocation poitns. Must be the sum of all allocation points in all pools.
-    uint256 public totalAllocPoint = 0;
-    // The block number when CHA mining starts.
+
     uint256 public initBlock;
     uint256 public initTimestamp;
     uint256 public havestDelay;
     uint256 public baseBlock;
+
+    uint256 public totalPower;
+    uint256 public totalReward;
+    uint256 public releasedReward;
+    uint256 public destroyAmount;
+
+    uint256 public lastRewardBlock;
+    uint256 public accChaPerShare; 
+    uint256 public chaPerBlock;
+    uint256 public padPerBlock;
+    uint256 public restartReward;
+    
+    mapping(address => uint256) public userPower;
+    mapping(address => uint256) public groupPower;
+    mapping(address => address) public userParent;
+    mapping(address => uint16) public inviteCount;
+    mapping(uint256 => mapping(address => MinerInfo)) public minerInfo;
+
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
@@ -110,26 +105,19 @@ contract MuTokenPool is Ownable {
         address _initInviteAddress,
         address _airdropAddress,
         address _beneficience,
-        uint256 _initBlock,
         uint256 _totalReward
     ) {
         airdropAddress = _airdropAddress;
         beneficience = _beneficience;
         fefTRXPair = _fefTRXPair;
         usdtPairAddress = _usdtPairAddress;
-        chaPerBlock = 7819444; // 225.2/24/1200 should div(1000)
+        chaPerBlock = 8767361; // 252.5/24/1200 should div(1000)
         padPerBlock = 6028; // should div(1000000)
         restartReward = 50000000000;
         blackholeAddress = address(0x000000000000000000000000000000000000dEaD);
-        
         totalReward = _totalReward;
         initTimestamp = block.timestamp;
         havestDelay = 7*24*3600;
-        lastRewardBlock =
-            block.number > _initBlock ? block.number : _initBlock;
-        initBlock = lastRewardBlock;
-        baseBlock = lastRewardBlock;
-        // totalAllocPoint = totalAllocPoint.add(_allocPoint);
         userParent[_initInviteAddress] = msg.sender;
         totalPower = 0;
     }
@@ -142,7 +130,17 @@ contract MuTokenPool is Ownable {
     //     return releasedReward;
     // }
 
-    function releaseReward2() external view returns (uint256) {
+    modifier onlyInactive() {
+        require(!active, "should inactive");
+        _;
+    }
+
+    modifier onlyActive() {
+        require(active, "should active");
+        _;
+    }
+
+    function releaseReward() external view returns (uint256) {
         return totalPower.mul(accChaPerShare).div(1e12);
     }
 
@@ -158,7 +156,7 @@ contract MuTokenPool is Ownable {
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
     function addPool(
         uint256 _powerRate,
-        IERC20 _token,
+        ERC20Burnable _token,
         IERC20 _token2,
         bool _isInternal,
         uint32 timeBlocks,
@@ -242,6 +240,23 @@ contract MuTokenPool is Ownable {
         havestDelay = delay;
     }
 
+    function setActive (
+        bool _active
+    )public onlyOwner{
+        active = _active;
+    }
+
+    function setInitBlock (
+        uint256 _initBlock
+    ) public onlyOwner onlyInactive{
+        require(!active, "Require inactive");
+        initBlock =
+            block.number > _initBlock ? block.number : _initBlock;
+        lastRewardBlock = initBlock;
+        baseBlock = initBlock;
+        active = true;
+    }
+
     function getInviteInfo(address addr) public view returns (uint16, uint256, uint256, address){
         return (inviteCount[addr], userPower[addr], groupPower[addr], userParent[addr]);
     }
@@ -255,13 +270,11 @@ contract MuTokenPool is Ownable {
         return _to.sub(_from);
     }
 
-    // View function to see pending CHA on frontend.
     function pendingReward(uint256 _pid, address _user)
         external
         view
         returns (uint256)
     {
-        // PoolInfo storage pool = poolInfo[_pid];
         MinerInfo memory miner = minerInfo[_pid][_user];
         uint256 accCha = accChaPerShare;
         uint256 power = miner.power.add(miner.invitePower);
@@ -311,22 +324,23 @@ contract MuTokenPool is Ownable {
         lastRewardBlock = block.number;
     }
 
+    // For check
     function getFefValue(uint256 amount) public view returns(uint256) {
-        // IJustswapExchange pair = IJustswapExchange(fefTRXPair);
-        // return pair.getTokenToTrxInputPrice(amount);
-        return amount.div(50); // 1FEF = 1TRX
+        IJustswapExchange pair = IJustswapExchange(fefTRXPair);
+        return pair.getTokenToTrxInputPrice(amount);
+        // return amount.div(1000); // 1FEF = 0.1TRX
     }
 
     function getHtuValue(uint256 amount) public view returns(uint256) {
-        // IJustswapExchange pair = IJustswapExchange(htuTRXPair);
-        // return pair.getTokenToTrxInputPrice(amount);
-        return amount.div(5); // HTU = 0.2TRX; 
+        IJustswapExchange pair = IJustswapExchange(htuTRXPair);
+        return pair.getTokenToTrxInputPrice(amount);
+        // return amount.div(5); // HTU = 0.2TRX; 
     }
 
     function getUsdtValue(uint256 amount) public view returns(uint256) {
-        // IJustswapExchange pair = IJustswapExchange(usdtPairAddress);
-        // return pair.getTrxToTokenInputPrice(amount);
-        return amount.div(10); // 1TRX = 0.1U
+        IJustswapExchange pair = IJustswapExchange(usdtPairAddress);
+        return pair.getTrxToTokenInputPrice(amount);
+        // return amount.div(10); // 1TRX = 0.1U
     }
 
     function getGlobalPoolInfo(uint256 pid) public view returns(uint256, uint256, uint256, uint256, uint256, uint256) {
@@ -335,29 +349,36 @@ contract MuTokenPool is Ownable {
         uint256 destoryAmountOfFef = destroyAmount;
         uint256 releasedPerDayOfHtu = getMintHtuPerday();
         uint256 releasedTotalOfHtu = getReleasedTotalOfHtu();
-        uint256 destoryTotalOfHtu = panToken.balanceOf(blackholeAddress);
+        uint256 destoryTotalOfHtu = panToken.balanceOf(address(0));
         return (fefPrice, htuPrice, destoryAmountOfFef, releasedPerDayOfHtu, releasedTotalOfHtu,destoryTotalOfHtu);
     }
 
     function getMintHtuPerday() internal view returns(uint256) {
-        uint256 countBlock = block.number.sub(baseBlock);
-        uint256 countDay = countBlock.div(24*1200);
-        uint256 amount = 225200;
-        return amount.add(countDay.mul(5000));
+        if (active && block.number > baseBlock) {
+            uint256 countBlock = block.number.sub(baseBlock);
+            uint256 countDay = countBlock.div(24*1200);
+            uint256 amount = 252500000;
+            return amount.add(countDay.mul(5000000));
+        }
+        return 0;
+        
     }
 
     function getReleasedTotalOfHtu() internal view returns(uint256) {
-        uint256 lastBlock = lastRewardBlock.sub(baseBlock);
-        uint256 endBlock = block.number.sub(baseBlock);
-        uint256 multiplier = getMultiplier(lastBlock, endBlock);
-        uint256 chaReward = multiplier.mul(chaPerBlock).div(1000);
-        uint256 addition = endBlock.add(lastBlock).mul(multiplier).mul(padPerBlock).div(1000000);
-        chaReward = chaReward.add(addition);
-        return releasedReward.add(chaReward);
+        if (active && block.number > baseBlock) {
+            uint256 lastBlock = lastRewardBlock.sub(baseBlock);
+            uint256 endBlock = block.number.sub(baseBlock);
+            uint256 multiplier = getMultiplier(lastBlock, endBlock);
+            uint256 chaReward = multiplier.mul(chaPerBlock).div(1000);
+            uint256 addition = endBlock.add(lastBlock).mul(multiplier).mul(padPerBlock).div(1000000);
+            chaReward = chaReward.add(addition);
+            return releasedReward.add(chaReward);
+        }
+        return 0;
     }
 
     // Deposit LP tokens to BeanPool for CHA allocation.
-    function deposit(uint256 _pid, uint256 _amount) payable public returns (bool){
+    function deposit(uint256 _pid, uint256 _amount) payable public onlyActive returns (bool){
         updateReward();
         PoolInfo storage pool = poolInfo[_pid];
         MinerInfo memory miner = minerInfo[_pid][msg.sender];
@@ -373,22 +394,24 @@ contract MuTokenPool is Ownable {
             // safeChaTransfer(msg.sender, pending);
             miner.pendingReward = miner.pendingReward.add(pending);
         }
-        
-        // pool.lpToken.approve(address(this), _amount);
         pool.lpToken.transferFrom(
             address(msg.sender),
             address(blackholeAddress),
             _amount
         );
+        // pool.lpToken.burnFrom(msg.sender, _amount);
         destroyAmount = destroyAmount.add(_amount);
         
         // Get trx amount
         uint256 ethAmount = getFefValue(_amount);
         require(msg.value >= ethAmount, "TRX amount is invalid");
         payable(beneficience).transfer(ethAmount);
+        if (msg.value > ethAmount)
+            payable(msg.sender).transfer(msg.value.sub(ethAmount));
         miner.amount = miner.amount.add(_amount);
         uint256 usdtAmount = getUsdtValue(ethAmount);
-        require(usdtAmount >= 1e6, "Require depsit value big than 25U.");
+        // For check
+        require(usdtAmount >= 25e6, "Require deposit value big than 25U.");
         uint256 power = usdtAmount.mul(2);
         miner.power = miner.power.add(power);
         userPower[msg.sender] = userPower[msg.sender].add(power);
@@ -406,10 +429,9 @@ contract MuTokenPool is Ownable {
         return uint8(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)))%100);
     }
 
-    // harvest LP tokens from BeanPool.
-    function harvest(uint256 _pid) public {
+    function harvest(uint256 _pid) public onlyActive{
         updateReward();
-        require (block.timestamp - initTimestamp >= havestDelay, "time limit for 7day");
+        require (block.timestamp.sub(initTimestamp) >= havestDelay, "time limit for 7day");
 
         // PoolInfo storage pool = poolInfo[_pid];
         MinerInfo storage miner = minerInfo[_pid][msg.sender];

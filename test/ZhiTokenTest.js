@@ -66,10 +66,10 @@ contract("ERC20ZhiToken", function (accounts) {
   it("Test transfer from white list.", async function () {
     const token = await ERC20ZhiToken.deployed()
     await token.setExcludeFromFee(accounts[0]);
-    const balance = await token.balanceOf.call(accounts[10]);
+    const balance = await token.balanceOf.call(accounts[4]);
     console.log(balance.toString());
-    await token.transfer(accounts[10], "1000000", {from: accounts[0]});
-    const balance2 = await token.balanceOf.call(accounts[10]);
+    await token.transfer(accounts[4], "1000000", {from: accounts[0]});
+    const balance2 = await token.balanceOf.call(accounts[4]);
     console.log(balance2.toString());
     assert.equal(balance2, balance.toNumber() + 1000000);
   });
@@ -77,47 +77,52 @@ contract("ERC20ZhiToken", function (accounts) {
   it("Test transfer from normal list.", async function () {
     const token = await ERC20ZhiToken.deployed()
     await token.setIncludeInFee(accounts[0]);
-    const balance = await token.balanceOf.call(accounts[10]);
+    const balance = await token.balanceOf.call(accounts[4]);
     console.log(balance.toString());
-    await token.transfer(accounts[10], "1000000", {from: accounts[0]});
-    const balance2 = await token.balanceOf.call(accounts[10]);
+    await token.transfer(accounts[4], "1000000", {from: accounts[0]});
+    const balance2 = await token.balanceOf.call(accounts[4]);
     console.log(balance2.toString());
     assert.equal(balance2, balance.toNumber() + 1000000*92/100);
   });
 
-  // it("Test transfer from white list should not work.", async function () {
-  //   const token = await ERC20ZhiToken.deployed();
-  //   await token.setIncludeInFee(accounts[0], {from: accounts[0]});
+  it("Test transfer from white list should not work.", async function () {
+    const token = await ERC20ZhiToken.deployed();
+    await token.setIncludeInFee(accounts[0], {from: accounts[0]});
     
-  //   const balance = await token.balanceOf.call(accounts[5]);
-  //   console.log(balance.toString());
-  //   await token.transfer(accounts[5], "1000000", {from: accounts[0]});
-  //   const balance2 = await token.balanceOf.call(accounts[5]);
-  //   console.log(balance2.toString());
-  //   assert.equal(balance2, balance.toNumber() + 1000000*92/100);
+    const balance = await token.balanceOf.call(accounts[5]);
+    console.log(balance.toString());
+    await token.transfer(accounts[5], "1000000", {from: accounts[0]});
+    const balance2 = await token.balanceOf.call(accounts[5]);
+    console.log(balance2.toString());
+    assert.equal(balance2, balance.toNumber() + 1000000*92/100);
+    // await token.setExcludeFromFee(accounts[0]);
+  });
 
-  //   // await token.setExcludeFromFee(accounts[0]);
-    
-  // });
+  it("Check transferFrom", async function() {
+    // 2 > 0 > 1
+    const token = await ERC20ZhiToken.deployed();
+    await token.setExcludeFromFee(accounts[0], {from: accounts[0]});
+    await token.setExcludeFromFee(accounts[1], {from: accounts[0]});
+    await token.transfer(accounts[2], "100000000", {from: accounts[0]});
+    const balance = await token.balanceOf.call(accounts[1]);
+    await token.approve(accounts[0], 128000000, {from: accounts[2]});
+    await token.transferFrom(accounts[2], accounts[1], 28000000, {from: accounts[0]});
+    const balance2 = await token.balanceOf.call(accounts[1]);
+    assert.equal(balance2.toNumber(), balance.toNumber() + 28000000);
+  });
 
-  // it("Check deploy two NFT deployed", async function() {
-  //   nft = await ERC721PresetMinterPauserAutoId.deployed();
-  //   const to = accounts[0];
-  //   await nft.mint(to);
-  //   const owner0 = await nft.ownerOf.call(0);
-  //   assert.equal(owner0, to);
-
-  //   await nft.mint(to);
-  //   const owner1 = await nft.ownerOf.call(1);
-  //   assert.equal(owner1, to);
-  //   // return assert.equal(nft.balanceOf(to), 1);
-  //   // const owner0 = await nft.ownerOf.call(0);
-  //   // return assert.equal(owner0, to);
-  //   // const owner0 = await nft.ownerOf.call(0);
-  //   // const uri0 = await nft.tokenURI.call(0);
-  //   // const uri0_1 = 'https://my-json-server.typicode.com/jilongcui/pantheon_json_db/tokens/0';
-  //   // return assert.equal(uri0, uri0_1); //assert.equal(owner0, to) && 
-  // });
+  it("Check transferFrom with fee", async function() {
+    // 2 > 0 > 1
+    const token = await ERC20ZhiToken.deployed();
+    await token.setExcludeFromFee(accounts[0], {from: accounts[0]});
+    await token.setIncludeInFee(accounts[1], {from: accounts[0]});
+    await token.transfer(accounts[2], "100000000", {from: accounts[0]});
+    const balance = await token.balanceOf.call(accounts[1]);
+    await token.approve(accounts[0], 128000000, {from: accounts[2]});
+    await token.transferFrom(accounts[2], accounts[1], 28000000, {from: accounts[0]});
+    const balance2 = await token.balanceOf.call(accounts[1]);
+    assert.equal(balance2.toNumber(), balance.toNumber() + 28000000*92/100);
+  });
 
   // it("C2C: check C2C deployed", async function () {
   //   const c2c = await PantheonC2C.deployed()

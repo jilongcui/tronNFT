@@ -38,10 +38,11 @@ contract("MuTokenPool", function (accounts) {
     console.log("Beneficience ", accounts[5]);
     await pool.setBeneficience(accounts[5]);
     await pool.setMainToken(token.address);
+    const currentBlock = await tronWeb.trx.getCurrentBlock();
+    await pool.setInitBlock(currentBlock.block_header.raw_data.number);
     
     if(accounts.length < 3) {
       // Set your own accounts if you are not using Tron Quickstart
-
     }
   })
   it("Test init supply", async function () {
@@ -77,17 +78,21 @@ contract("MuTokenPool", function (accounts) {
   it("Test deposit with amount 1", async function() {
     const minerInfo = await pool.minerInfo(0, accounts[0]);
     console.log(minerInfo);
+    const balance = (await  muToken.balanceOf(accounts[0]));
+    console.log(balance);
     const approve = await muToken.approve(pool.address, "1000000000000", {from: accounts[0]})
     console.log(approve);
-    const deposit = await pool.deposit(0, 1000000000, {callValue: 10000000, from: accounts[0]});
+    const deposit = await pool.deposit(0, 1000000000, {callValue: 10000000, shouldPollResponse: true, from: accounts[0]});
     // const deposit = await pool.call("deposit", 0, "1000000", {value: "1000000"})
     console.log(deposit);
     // await pool.updateReward();
     const minerInfo2 = await pool.minerInfo(0, accounts[0]);
     console.log(minerInfo2);
 
-    const balance = (await  muToken.balanceOf(pool.address)).toString();
-    console.log(balance);
+    const balance2 = (await  muToken.balanceOf(accounts[0]));
+    console.log(balance2);
+    assert.equal(balance2.toString(), balance.toNumber() - 1000000000);
+
     assert.equal(minerInfo2.power.toString(), minerInfo.power.toNumber() + 2000000);
     await wait(15);
   })
@@ -98,7 +103,7 @@ contract("MuTokenPool", function (accounts) {
     console.log(minerInfo);
     const approve = await muToken.approve(pool.address, "1000000000000", {from: accounts[2]})
     console.log(approve);
-    const deposit = await pool.deposit(0, 1000000000, {callValue: 10000000, from: accounts[2]});
+    const deposit = await pool.deposit(0, 1000000000, {callValue: 10000000, shouldPollResponse: true, from: accounts[2]});
     // const deposit = await pool.call("deposit", 0, "1000000", {value: "1000000"})
     console.log(deposit);
     // await pool.updateReward();
@@ -108,7 +113,29 @@ contract("MuTokenPool", function (accounts) {
     const balance = (await  muToken.balanceOf(pool.address)).toString();
     console.log(balance);
     assert.equal(minerInfo2.power.toString(), minerInfo.power.toNumber() + 2000000);
-    await wait(15);
+    await wait(10);
+  })
+
+  it("Test trx balance of deposit ", async function() {
+    const minerInfo = await pool.minerInfo(0, accounts[0]);
+    console.log(minerInfo);
+    const balance = await tronWeb.trx.getBalance(accounts[0]);
+    console.log(balance);
+    const approve = await muToken.approve(pool.address, "1000000000000", {from: accounts[0]})
+    console.log(approve);
+    const deposit = await pool.deposit(0, 1000000000, {callValue: 130000000, shouldPollResponse:true, from: accounts[0]});
+    // const deposit = await pool.call("deposit", 0, "1000000", {value: "1000000"})
+    await wait(10);
+    console.log(deposit);
+    // await pool.updateReward();
+    const minerInfo2 = await pool.minerInfo(0, accounts[0]);
+    console.log(minerInfo2);
+
+    const balance2 = await tronWeb.trx.getBalance(accounts[0]);
+    console.log(balance2);
+    assert.isTrue(balance2 + 30000000 > balance);
+    assert.equal(minerInfo2.power.toString(), minerInfo.power.toNumber() + 2000000);
+    await wait(10);
   })
 
   it("Check pendingReward of pool", async function() {
@@ -125,7 +152,7 @@ contract("MuTokenPool", function (accounts) {
     
     const lastBlock = baseBlock - baseBlock;
     const endBlock = block.block_header.raw_data.number - baseBlock;
-    const baseReward = (endBlock - lastBlock) * 7819444 / 1000;
+    const baseReward = (endBlock - lastBlock) * 8767361 / 1000;
     const addition = (endBlock + lastBlock)*(endBlock - lastBlock)*6028/1000000;
     console.log(lastBlock, endBlock);
     console.log(reward, parseInt(baseReward+addition));
@@ -139,7 +166,7 @@ contract("MuTokenPool", function (accounts) {
     console.log(minerInfo);
     const approve = await muToken.approve(pool.address, "1000000000000", {from: accounts[0]})
     console.log(approve);
-    const deposit = await pool.deposit(0, "1000000000", {callValue: 10000000, from: accounts[0]});
+    const deposit = await pool.deposit(0, "1000000000", {callValue: 10000000, shouldPollResponse: true, from: accounts[0]});
     // const deposit = await pool.call("deposit", 0, "1000000", {value: "1000000"})
     console.log(deposit);
     // await pool.updateReward();
@@ -160,7 +187,7 @@ contract("MuTokenPool", function (accounts) {
 
     // const approve = await token.approve(pool.address, "1000000000000")
     // console.log(approve);
-    const deposit = await pool.deposit(0, "1000000000", {callValue: "10000000", from: accounts[0]});
+    const deposit = await pool.deposit(0, "1000000000", {callValue: "10000000", shouldPollResponse: true, from: accounts[0]});
     // const deposit = await pool.call("deposit", 0, "1000000", {value: "1000000"})
     console.log(deposit);
     await wait(10)
@@ -176,7 +203,7 @@ contract("MuTokenPool", function (accounts) {
     // await wait(10)
     const poolInfo = await pool.getGlobalPoolInfo(0);
     console.log(poolInfo);
-    assert.equal(poolInfo[3].toString(), 225200);
+    assert.equal(poolInfo[3].toString(), 252500000);
   })
 
   it("Check havest", async function() {

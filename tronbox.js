@@ -18,6 +18,8 @@ module.exports = {
       userFeePercentage: 100,
       feeLimit: 1500 * 1e6,
       fullHost: 'https://api.trongrid.io',
+      timeout: 2000,
+      mnemonic: process.env.MNEMONIC_MAINNET,
       network_id: '*'
     },
     shasta: {
