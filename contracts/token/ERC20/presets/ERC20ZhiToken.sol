@@ -42,12 +42,6 @@ contract ERC20ZhiToken is Context, ERC20Burnable, AccessControlEnumerable, Ownab
     // Mapping
     mapping (address => bool) private _isExcludedFromFee;
 
-    // modifier lockTheSwap {
-    //     inSwapAndLiquify = true;
-    //     _;
-    //     inSwapAndLiquify = false;
-    // }
-
     /**
      * @dev Mints `initialSupply` amount of token and transfers them to `owner`.
      *
@@ -75,11 +69,6 @@ contract ERC20ZhiToken is Context, ERC20Burnable, AccessControlEnumerable, Ownab
     function decimals() public view virtual override returns (uint8) {
         return 6;
     }
-
-    // Get a random 1000
-    // function random() internal view returns (uint8) {
-    //     return uint8(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)))%1000);
-    // }
 
     function transfer(
         address to,

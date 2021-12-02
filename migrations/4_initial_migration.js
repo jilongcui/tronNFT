@@ -36,6 +36,8 @@ module.exports = async function(deployer, network, accounts) {
     let pool = await MuTokenPool.deployed();
     console.log("Pool init start 4.")
     
+    // await pool.setHtuTrxPair("TLkef9VYtmHG3oAi4neG75WMEnwhTmvsFB");
+
     console.log(accounts);
     console.log(await pool.fefTRXPair());
     console.log(await pool.htuTRXPair());
@@ -122,18 +124,21 @@ module.exports = async function(deployer, network, accounts) {
     console.log(zhiToken.address);
     console.log(pool.address);
     console.log("Pool init start.")
-    // await muToken.mint(accounts, "1000000000000");
+    
+    // await muToken.transfer("TB7Jei89VMW5B3DmifmSGd8HD1Pwtnb62J", "200000000000");
+    await muToken.transfer("TWRBkJ6R1q87SSp8YMcsiGXEUfDGKysagw", "200000000000");
+    
     // let balance = await muToken.balanceOf(accounts);
     // console.log("account 0 balance", balance.toNumber());
 
-    const minerInfo = await pool.minerInfo(0, accounts);
-    const reward = await pool.pendingReward(0, accounts);
-    console.log(minerInfo);
-    console.log(reward);
+    // const minerInfo = await pool.minerInfo(0, accounts);
+    // const reward = await pool.pendingReward(0, accounts);
+    // console.log(minerInfo);
+    // console.log(reward);
 
     // const currentBlock = await tronWeb.trx.getCurrentBlock();
     // console.log("Start at block ", currentBlock);
-    await pool.setInitBlock(0);
+    // await pool.setInitBlock(0);
     console.log("Pool init end.")
   }
 

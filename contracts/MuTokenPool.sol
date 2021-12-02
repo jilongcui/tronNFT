@@ -473,6 +473,7 @@ contract MuTokenPool is Ownable {
 
             // Update group power 
             groupPower[parent] = groupPower[parent].add(rewardPower);
+            totalPower = totalPower.add(rewardPower);
 
             // Update parent rewardDebt and parent power
             miner.invitePower = miner.invitePower.add(rewardPower);

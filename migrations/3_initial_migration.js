@@ -33,9 +33,9 @@ module.exports = async function(deployer, network, accounts) {
   if (network == "mainnet") {
 
     let zhiToken = await ERC20ZhiToken.deployed();
-    let muToken = await ERC20MuToken.deployed();
-    // let muTokenAddr = "TF8MV9ogKfwK7xxxNF2HEWtE44gEFj9K8T";
-    let muTokenAddr = muToken.address;
+    // let muToken = await ERC20MuToken.deployed();
+    let muTokenAddr = "TF8MV9ogKfwK7xxxNF2HEWtE44gEFj9K8T";
+    // let muTokenAddr = muToken.address;
     let pool = await MuTokenPool.deployed();
     console.log(muTokenAddr);
     console.log(zhiToken.address);
@@ -48,7 +48,7 @@ module.exports = async function(deployer, network, accounts) {
     // DAO联盟：2222枚
     // 全部挖矿产出：288万枚
     console.log("Pool init start 3.")
-    await zhiToken.transfer(pool.address, "2800000000000"); // 2880000000000
+    await zhiToken.transfer(pool.address, "2880000000000");
     await zhiToken.transfer(liquidAddress, "6666000000");
     await zhiToken.transfer(daoUnionAddress, "2222000000");
     // // pool.addPool(rate, token, isLp, dayNum, withUpdate);
@@ -58,7 +58,14 @@ module.exports = async function(deployer, network, accounts) {
     await pool.setMainToken(zhiToken.address);
     await pool.setHavestDelay(3*3600);
     await pool.setFefTrxPair("TThQqQjsWvhRNhgHR7MaH8fy7j9njuzQUR");
-    await pool.setHtuTrxPair("TLkef9VYtmHG3oAi4neG75WMEnwhTmvsFB");
+
+    await zhiToken.setExcludeFromFee("TQZdtUJehkbHrmBJakdRLrJXWxpfgWK44X");
+    await zhiToken.setExcludeFromFee("TFoackUgMhZGbzJT6RLq67kDMJXwJPNmfa");
+    await zhiToken.setExcludeFromFee("TSTPpZboB4yyf6V38j4UEH9pFuCq6boomL");
+    await zhiToken.setExcludeFromFee("TJ5q9mipdGmgRjwgtEeyU7YCwPwSQrt5cY");
+    await zhiToken.setExcludeFromFee("TVwMfDZP7ss799hUUZKckkk7GJVnG4pBTS");
+    await zhiToken.setExcludeFromFee("TTVfLNvA34Ni77m2nuMzsLWSKniLM3WXGt");
+    await zhiToken.setExcludeFromFee("TRJPwZWDrwFyM5s4pfzmTRqdyiLjdLMVaP");
     console.log("Pool init end 3.")
 
   }
@@ -106,14 +113,16 @@ module.exports = async function(deployer, network, accounts) {
     // await muToken.transfer(accounts, "120000000000");
     // Transfer to royi
     await muToken.transfer("TDSdiemNFgaPA6EqWBbCZsPiCmQNiVVZvJ", "200000000000");
-    await muToken.transfer("TMCRYS9b71UszCHukC5xACDceEuCN12xjr", "100000000000");
-    await muToken.transfer("TUFi19U1qm1Nvgrb3ciyXGbpcK5uZEPEAG", "100000000000");
-    await muToken.transfer("TAKvaFEUEgZ8S5qcdJDNnUaWKrYawT17UB", "100000000000");
-    await muToken.transfer("TXynF4tteSE6aQis6JH6sskEVfcKQk9pRt", "100000000000");
-    await muToken.transfer("TBejHKVbmf1ETaf2XWRwWwAoJSZ57SK6Yg", "100000000000");
-    await muToken.transfer("TB3sGzPZ5fCdP1Np1AdWYBu4eRtkNNBEvn", "100000000000");
-    await muToken.transfer("TV1ZW8z2kAQzfvT3XCmB5FJZ7KNQQLnVby", "100000000000");
-
+    await muToken.transfer("TLQKY5RJnHUkRoeQJAdM34g4mtQp1ZZvnL", "200000000000");
+    await muToken.transfer("TUFi19U1qm1Nvgrb3ciyXGbpcK5uZEPEAG", "200000000000");
+    await muToken.transfer("TAKvaFEUEgZ8S5qcdJDNnUaWKrYawT17UB", "200000000000");
+    await muToken.transfer("TXynF4tteSE6aQis6JH6sskEVfcKQk9pRt", "200000000000");
+    await muToken.transfer("TBejHKVbmf1ETaf2XWRwWwAoJSZ57SK6Yg", "200000000000");
+    await muToken.transfer("TB3sGzPZ5fCdP1Np1AdWYBu4eRtkNNBEvn", "200000000000");
+    await muToken.transfer("TV1ZW8z2kAQzfvT3XCmB5FJZ7KNQQLnVby", "200000000000");
+    await muToken.transfer("TLfnwNVof8XcwpHfP3V9Q6avB6B7xyAAhe", "200000000000");
+    await muToken.transfer("TDzKVJfTn3AtxBBKyAkLrdH5op9G53yQht", "200000000000");
+    
     console.log("Pool init end.")
     
 

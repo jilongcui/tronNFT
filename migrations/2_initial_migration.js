@@ -62,7 +62,7 @@ module.exports = async function(deployer, network, accounts) {
     let totalReward = "2880000000000";
     deployer.deploy(ERC20ZhiToken, airdropAddress, initSupply, lastRemainSupply, accounts);
     // deployer.deploy(ERC20MuToken, initMuSupply, accounts);
-    deployer.deploy(MuTokenPool, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, startBlock, totalReward);
+    deployer.deploy(MuTokenPool, FEFPairAddress, USDTPairAddress, inviteAddress, airdropAddress, beneficancy, totalReward);
 
     await sleep(5000);
     console.log("Pool init end 2.")
