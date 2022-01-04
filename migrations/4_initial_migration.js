@@ -36,20 +36,41 @@ module.exports = async function(deployer, network, accounts) {
     let pool = await MuTokenPool.deployed();
     console.log("Pool init start 4.")
     
-    // await pool.setHtuTrxPair("TLkef9VYtmHG3oAi4neG75WMEnwhTmvsFB");
+    // await pool.setHtuTrxPair("TD1zWA8STBocignyvRfuEkwEErM2AjkAof");
 
     console.log(accounts);
     console.log(await pool.fefTRXPair());
     console.log(await pool.htuTRXPair());
     console.log(await pool.usdtPairAddress());
+    
     // let poolInfo = await pool.getGlobalPoolInfo(0);
     // console.log(poolInfo);
-    let poolInfo2 = await pool.poolInfo(0);
-    console.log(poolInfo2);
+    // let poolInfo2 = await pool.poolInfo(0);
+    // console.log(poolInfo2);
+
+    // let baseBlock = await pool.baseBlock();
+    // console.log("baseBlock ", baseBlock.toString());
+
+    // let invitePower = await pool.getInviteInfo("TQMWBb1xyoVdaEibjaR3kYEdxKv8tWKkg9");
+    // let invitePower2 = await pool.getInviteInfo("TYvQu7s67m72r6GoMQURZgsCjrUUzWfiVD");
+    // let invitePower3 = await pool.getInviteInfo("TVQLCa6E7uZryUdFzwLrTSVctq1QwmPbWj");
+    // let invitePower4 = await pool.getInviteInfo("TPQ3oEWptritzt1EMhTFMRxKHzyGj9fZSo");
+    // console.log(invitePower[1].toString());
+    // console.log(invitePower[2].toString());
+    // console.log(invitePower[3].toString());
+    // console.log(invitePower2[1].toString());
+    // console.log(invitePower2[2].toString());
+    // console.log(invitePower2[3].toString());
+    // console.log(invitePower3[1].toString());
+    // console.log(invitePower3[2].toString());
+    // console.log(invitePower3[3].toString());
+    // console.log(invitePower4[1].toString());
+    // console.log(invitePower4[2].toString());
+    // console.log(invitePower4[3].toString());
     
     // await pool.setInvite("TDSdiemNFgaPA6EqWBbCZsPiCmQNiVVZvJ");
-    let parent = await pool.getInviteInfo(accounts);
-    console.log("parent", parent);
+    // let parent = await pool.getInviteInfo(accounts);
+    // console.log("parent", parent);
     // let value = await pool.getFefValue("100000000");
     // console.log(value.toNumber());
     // let value2 = await pool.getUsdtValue(value.toString());
@@ -60,15 +81,6 @@ module.exports = async function(deployer, network, accounts) {
     // await muToken.approve(pool.address, '10000000000');
     // let log = await pool.deposit(0, '100000000', {callValue: 30000000});
     // console.log(log);
-    
-    // await muToken.transfer("TDSdiemNFgaPA6EqWBbCZsPiCmQNiVVZvJ", "2000000000");
-    // await muToken.transfer("TMCRYS9b71UszCHukC5xACDceEuCN12xjr", "1000000000");
-    // await muToken.transfer("TUFi19U1qm1Nvgrb3ciyXGbpcK5uZEPEAG", "1000000000");
-    // await muToken.transfer("TAKvaFEUEgZ8S5qcdJDNnUaWKrYawT17UB", "1000000000");
-    // await muToken.transfer("TXynF4tteSE6aQis6JH6sskEVfcKQk9pRt", "1000000000");
-    // await muToken.transfer("TBejHKVbmf1ETaf2XWRwWwAoJSZ57SK6Yg", "1000000000");
-    // await muToken.transfer("TB3sGzPZ5fCdP1Np1AdWYBu4eRtkNNBEvn", "1000000000");
-    // await muToken.transfer("TV1ZW8z2kAQzfvT3XCmB5FJZ7KNQQLnVby", "1000000000");
 
     // await zhiToken.setExcludeFromFee("TQZdtUJehkbHrmBJakdRLrJXWxpfgWK44X");
     // await zhiToken.setExcludeFromFee("TFoackUgMhZGbzJT6RLq67kDMJXwJPNmfa");
@@ -77,11 +89,12 @@ module.exports = async function(deployer, network, accounts) {
     // await zhiToken.setExcludeFromFee("TVwMfDZP7ss799hUUZKckkk7GJVnG4pBTS");
     // await zhiToken.setExcludeFromFee("TTVfLNvA34Ni77m2nuMzsLWSKniLM3WXGt");
     // await zhiToken.setExcludeFromFee("TRJPwZWDrwFyM5s4pfzmTRqdyiLjdLMVaP");
+    await zhiToken.setIncludeInFee("TD1zWA8STBocignyvRfuEkwEErM2AjkAof");
 
-    let startBlock = 35709673;
-    const currentBlock = await tronWeb.trx.getCurrentBlock();
-    console.log("Current block ", currentBlock);
-    await pool.setInitBlock(0);
+    // let startBlock = 35709673;
+    // const currentBlock = await tronWeb.trx.getCurrentBlock();
+    // console.log("Current block ", currentBlock);
+    // await pool.setInitBlock(35986670);
     
     console.log("Pool init end 4.")
   }
