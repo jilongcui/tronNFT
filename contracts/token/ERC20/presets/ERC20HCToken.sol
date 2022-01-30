@@ -44,7 +44,7 @@ contract ERC20HCToken is Context, ERC20Burnable, AccessControlEnumerable, Ownabl
     constructor(
         uint256 _initialSupply,
         address owner
-    ) ERC20("HongChengTest Token", "HCTest") {
+    ) ERC20("HCommunity", "HC") {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(MINTER_ROLE, _msgSender());
         initialSupply = _initialSupply * (10**decimals());
@@ -62,7 +62,7 @@ contract ERC20HCToken is Context, ERC20Burnable, AccessControlEnumerable, Ownabl
     ) public virtual override returns (bool){
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
-        require(amount <= 5*10**decimals(), "Transfer amount must be greater than zero");
+        require(hasRole(MINTER_ROLE, _msgSender()) || amount <= 5*10**decimals(), "Transfer amount must be less than zero");
         
         _transfer(msg.sender, to, amount);
         return true;
@@ -74,7 +74,7 @@ contract ERC20HCToken is Context, ERC20Burnable, AccessControlEnumerable, Ownabl
         uint256 amount
     ) public virtual override returns (bool) {
         require(amount > 0, "Transfer amount must be greater than zero");
-        require(amount <= 5*10**decimals(), "Transfer amount must be greater than zero");
+        require(hasRole(MINTER_ROLE, _msgSender()) || amount <= 5*10**decimals(), "Transfer amount must be less than zero");
         _transfer(sender, recipient, amount);
         _approve(sender, msg.sender, allowance(sender,msg.sender).sub(amount, "ERC20: transfer amount exceeds allowance"));
 
