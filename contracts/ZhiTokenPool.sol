@@ -44,10 +44,10 @@ contract ZhiTokenPool is Ownable {
         uint256 amount;      // 本金
         uint256 power;       // 算力
         uint256 pendingReward;
-        uint256 rewardBlock;  // Reward debt. See explanation below.
+        uint256 harvestBlock;  // Reward debt. See explanation below.
         uint256 rewardDebt;  // Reward debt. See explanation below.
         uint256 startBlock;   // blocks for deposit cycle.;
-        uint256 endBlock;   // blocks for deposit cycle.;
+        uint256 harvestReward;   // already released for owner.;
     }
 
     // Info of each pool. pool is set manully.
@@ -56,39 +56,32 @@ contract ZhiTokenPool is Ownable {
         uint256 hcPerBlock;  // HC per block.
         uint256 accChaPerShare;
         uint256 totalReward;
-        uint256 totalBlock;
+        uint256 initBlock;
         uint256 delayBlock;
         uint256 totalPower;   // The power rate assigned to this pool. times 1000.
         uint256 releasedReward;
         uint256 lastRewardBlock;
+        uint256 endRewardBlock;   // blocks for reward cycle.;
+        uint256 endBlock;   // blocks for total miner cycle.;
     }
     
     PoolInfo[] public poolInfo;
 
-    bool public active = false;
+    bool public active = true;
 
     ERC20Burnable public mainToken;
-    address public fefTRXPair;
-    address public htuTRXPair;
     address public blackholeAddress;
 
-    uint256 public initBlock;
-    uint256 public havestDelay;
-    uint256 public baseBlock;
-
-    uint256 public destroyAmount;
-    
     mapping(uint256 => mapping(address => MinerInfo)) public minerInfo;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
-    event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
+    event Harvest(address indexed user, uint256 indexed pid, uint256 amount, uint256 remain);
     event InviteUser(address indexed parent, address indexed child, uint256 timestamp);
 
     constructor(
     ) {
         blackholeAddress = address(0x000000000000000000000000000000000000dEaD);
-        havestDelay = 7*24*3600;
     }
 
     function totalReward(uint256 _pid) external view returns (uint256) {
@@ -129,22 +122,26 @@ contract ZhiTokenPool is Ownable {
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
     function addPool(
         uint256 _startupBlock,
-        uint256 _totalBlock,
+        uint256 _cycleBlock,
         uint256 _delayBlock,
         uint256 _totalReward,
         ERC20Burnable _lpToken
     ) public onlyOwner {
+        uint256 totalBlock = _delayBlock.add(_cycleBlock);
+        _startupBlock = _startupBlock < block.number?block.number: _startupBlock;
         poolInfo.push(
             PoolInfo({
                 lpToken: _lpToken,
-                hcPerBlock: _totalReward.div(_totalBlock),
+                hcPerBlock: _totalReward.div(_cycleBlock),
                 totalReward: _totalReward,
-                totalBlock: _totalBlock,
                 delayBlock: _delayBlock,
+                endBlock: _startupBlock.add(totalBlock),
+                endRewardBlock: _startupBlock.add(_cycleBlock),
                 totalPower: 0,
                 accChaPerShare: 0,
                 releasedReward: 0,
-                lastRewardBlock: _startupBlock
+                initBlock: _startupBlock,
+                lastRewardBlock: _startupBlock < block.number?block.number: _startupBlock
             })
         );
     }
@@ -152,25 +149,21 @@ contract ZhiTokenPool is Ownable {
     // Update the given pool's CHA power rate. Can only be called by the owner.
     function setPool(
         uint256 _pid,
-        uint256 _hcPerBlock,
+        uint256 _startBlock,
+        uint256 _cycleBlock,
+        uint256 _delayBlock,
         bool _withUpdate
     ) public onlyOwner {
         if (_withUpdate) {
             updateReward(_pid);
         }
-        poolInfo[_pid].hcPerBlock = _hcPerBlock;
-    }
-
-    function setHtuTrxPair(
-        address _address
-    ) public onlyOwner{
-        htuTRXPair = _address;
-    }
-
-    function setFefTrxPair(
-        address _address
-    ) public onlyOwner{
-        fefTRXPair = _address;
+        uint256 totalBlock = _delayBlock.add(_cycleBlock);
+        _startBlock = _startBlock < block.number?block.number: _startBlock;
+        poolInfo[_pid].hcPerBlock = poolInfo[_pid].totalReward.div(_cycleBlock);
+        poolInfo[_pid].endRewardBlock = _startBlock.add(_cycleBlock);
+        poolInfo[_pid].endBlock = _startBlock.add(totalBlock);
+        poolInfo[_pid].lastRewardBlock = _startBlock;
+        poolInfo[_pid].delayBlock = _delayBlock;
     }
 
     function setMainToken(
@@ -179,10 +172,14 @@ contract ZhiTokenPool is Ownable {
         mainToken = ERC20Burnable(_token);
     }
 
-    function setHavestDelay(
-        uint256 delay
+    function setPoolDelay(
+        uint256 _pid,
+        uint256 delay,
+        uint256 _totalBlock
     ) public onlyOwner{
-        havestDelay = delay;
+        PoolInfo storage pool = poolInfo[_pid];
+        pool.delayBlock = delay;
+        pool.endBlock = pool.initBlock.add(_totalBlock);
     }
 
     function setActive (
@@ -190,68 +187,6 @@ contract ZhiTokenPool is Ownable {
     )public onlyOwner{
         active = _active;
     }
-
-    // function setInitBlock (
-    //     uint256 _initBlock
-    // ) public onlyOwner onlyInactive{
-    //     require(!active, "Require inactive");
-    //     initBlock =
-    //         block.number > _initBlock ? block.number : _initBlock;
-    //     lastRewardBlock = initBlock;
-    //     baseBlock = initBlock;
-    //     active = true;
-    // }
-
-    // For check
-    function getFefValue(uint256 amount) public view returns(uint256) {
-        IJustswapExchange pair = IJustswapExchange(fefTRXPair);
-        return pair.getTokenToTrxInputPrice(amount);
-        // return amount.div(1000); // 1FEF = 0.1TRX
-    }
-
-    function getHtuValue(uint256 amount) public view returns(uint256) {
-        IJustswapExchange pair = IJustswapExchange(htuTRXPair);
-        return pair.getTokenToTrxInputPrice(amount);
-        // return amount.div(5); // HTU = 0.2TRX; 
-    }
-
-    // function getUsdtValue(uint256 amount) public view returns(uint256) {
-    //     IJustswapExchange pair = IJustswapExchange(usdtPairAddress);
-    //     return pair.getTrxToTokenInputPrice(amount);
-    //     // return amount.div(10); // 1TRX = 0.1U
-    // }
-
-    function getGlobalPoolInfo(uint256 pid) public view returns(uint256, uint256, uint256, uint256, uint256) {
-        uint256 fefPrice = getFefValue(1e8);
-        uint256 htuPrice = getHtuValue(1e6);
-        uint256 destoryAmountOfFef = destroyAmount;
-        uint256 releasedPerDayOfHtu = getMintHtuPerday();
-        // uint256 releasedTotalOfHtu = getReleasedTotalOfHtu();
-        uint256 destoryTotalOfHtu = mainToken.balanceOf(address(0));
-        return (fefPrice, htuPrice, destoryAmountOfFef, releasedPerDayOfHtu,destoryTotalOfHtu);
-    }
-
-    function getMintHtuPerday() internal view returns(uint256) {
-        if (active && block.number > baseBlock) {
-            uint256 countBlock = block.number.sub(baseBlock);
-            uint256 countDay = countBlock.div(24*1200);
-            uint256 amount = 252500000;
-            return amount.add(countDay.mul(5000000));
-        }
-        return 0;
-        
-    }
-
-    // function getReleasedTotalOfHtu() internal view returns(uint256) {
-    //     if (active && block.number > baseBlock) {
-    //         uint256 lastBlock = lastRewardBlock;
-    //         uint256 endBlock = block.number;
-    //         uint256 multiplier = getMultiplier(lastBlock, endBlock);
-    //         uint256 chaReward = multiplier.mul(chaPerBlock);
-    //         return releasedReward.add(chaReward);
-    //     }
-    //     return 0;
-    // }
 
     // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to)
@@ -267,7 +202,8 @@ contract ZhiTokenPool is Ownable {
         updateReward(_pid);
         MinerInfo storage miner = minerInfo[_pid][msg.sender];
         PoolInfo storage pool = poolInfo[_pid];
-        require(block.number > pool.lastRewardBlock, "Not started");
+        require(block.number >= pool.initBlock, "Not started.");
+        require(block.number < pool.endRewardBlock, "Pool is end.");
         uint256 pending =
             miner.power.mul(pool.accChaPerShare).div(1e12).sub(
                 miner.rewardDebt
@@ -280,9 +216,9 @@ contract ZhiTokenPool is Ownable {
         );
         uint256 power = _amount;
         miner.startBlock = block.number;
-        miner.endBlock = block.number + pool.totalBlock;
-        miner.rewardBlock = block.number + pool.delayBlock;
+        miner.harvestBlock = pool.initBlock.add(pool.delayBlock);
         miner.power = miner.power.add(power);
+        miner.amount = miner.amount.add(power);
         pool.totalPower = pool.totalPower.add(power);
         miner.rewardDebt = miner.power.mul(pool.accChaPerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
@@ -290,16 +226,16 @@ contract ZhiTokenPool is Ownable {
         return true;
     }
 
-    function pendingReward(uint256 _pid, address _user) external view returns (uint256)
+    function pendingReward(uint256 _pid, address _user) external view returns (uint256, uint256)
     {
         MinerInfo memory miner = minerInfo[_pid][_user];
         PoolInfo memory pool = poolInfo[_pid];
         uint256 accCha = pool.accChaPerShare;
         uint256 power = miner.power;
-        
         // calculate new pendingReward
-        if (power != 0 && block.number > pool.lastRewardBlock && pool.totalPower != 0) {
-            uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
+        uint256 currentBlock = block.number < pool.endRewardBlock?block.number: pool.endRewardBlock;
+        if (power != 0 && currentBlock > pool.lastRewardBlock && pool.totalPower != 0) {
+            uint256 multiplier = getMultiplier(pool.lastRewardBlock, currentBlock);
             uint256 chaReward = multiplier.mul(pool.hcPerBlock);
             uint256 remain = pool.totalReward.sub(pool.releasedReward);
             if (remain < chaReward)
@@ -308,7 +244,20 @@ contract ZhiTokenPool is Ownable {
                 chaReward.mul(1e12).div(pool.totalPower)
             );
         }
-        return miner.pendingReward.add(power.mul(accCha).div(1e12).sub(miner.rewardDebt));
+        uint256 pending =  miner.pendingReward.add(power.mul(accCha).div(1e12).sub(miner.rewardDebt));
+        uint256 available = 0;
+        currentBlock = block.number < pool.endBlock?block.number: pool.endBlock;
+        // require(currentBlock > miner.harvestBlock, "harvest: none remain reward");
+        // Current available reward
+        // total reward
+        // remain block
+        // everyBlock = remainReward / remainBlock
+        // available = (currentBlock - harvestBlock) * everyBlock
+        if (currentBlock > miner.harvestBlock) {
+            available = pending.mul(currentBlock.sub(miner.harvestBlock));
+            available = available.div(pool.endBlock.sub(miner.harvestBlock));
+        }
+        return(available, pending);
     }
 
     // Update reward variables of the given pool to be up-to-date.
@@ -335,30 +284,29 @@ contract ZhiTokenPool is Ownable {
 
     function harvest(uint256 _pid) public onlyActive{
         updateReward(_pid);
-        // require (block.timestamp.sub(initTimestamp) >= havestDelay, "time limit for 7day");
-
         PoolInfo storage pool = poolInfo[_pid];
         MinerInfo storage miner = minerInfo[_pid][msg.sender];
         uint256 pending =
             miner.power.mul(pool.accChaPerShare).div(1e12).sub(
                 miner.rewardDebt
             );
-        pending = miner.pendingReward.add(pending);
-        require(pending > 0, "harvest: none reward");
-        uint256 currentBlock = block.number < miner.endBlock?block.number: miner.endBlock;
-        require(currentBlock > miner.rewardBlock, "harvest: none remain reward");
+        miner.pendingReward = miner.pendingReward.add(pending);
+        require(miner.pendingReward > 0, "harvest: none reward");
+        uint256 currentBlock = block.number < pool.endBlock?block.number: pool.endBlock;
+        require(currentBlock > miner.harvestBlock, "harvest: none remain reward");
         // Current available reward
         // total reward
         // remain block
         // everyBlock = remainReward / remainBlock
-        // available = (currentBlock - rewardBlock) * everyBlock
-        pending = pending.mul(currentBlock.sub(miner.rewardBlock));
-        pending = pending.div(miner.endBlock.sub(miner.rewardBlock));
+        // available = (currentBlock - harvestBlock) * everyBlock
+        pending = miner.pendingReward.mul(currentBlock.sub(miner.harvestBlock));
+        pending = pending.div(pool.endBlock.sub(miner.harvestBlock));
         safeChaTransfer(msg.sender, pending);
         miner.rewardDebt = miner.power.mul(pool.accChaPerShare).div(1e12);
-        miner.rewardBlock = currentBlock;
-        miner.pendingReward = 0;
-        emit Harvest(msg.sender, _pid, pending);
+        miner.harvestBlock = currentBlock;
+        miner.pendingReward = miner.pendingReward.sub(pending);
+        miner.harvestReward = miner.harvestReward.add(pending);
+        emit Harvest(msg.sender, _pid, pending, miner.pendingReward);
     }
 
     // // Withdraw LP tokens from Pool.
@@ -375,13 +323,14 @@ contract ZhiTokenPool is Ownable {
         );
         pending = miner.pendingReward.add(pending);
 
-        uint256 currentBlock = block.number < miner.endBlock?block.number: miner.endBlock;
+        uint256 currentBlock = block.number < pool.endBlock?block.number: pool.endBlock;
         // Current available reward
         uint256 available = 0;
-        if (currentBlock > miner.rewardBlock) {
-            available = pending.mul(currentBlock.sub(miner.rewardBlock));
-            available = available.div(miner.endBlock.sub(miner.rewardBlock));
+        if (currentBlock > miner.harvestBlock) {
+            available = pending.mul(currentBlock.sub(miner.harvestBlock));
+            available = available.div(pool.endBlock.sub(miner.harvestBlock));
             safeChaTransfer(msg.sender, available);
+            miner.harvestReward =miner.harvestReward.add(available);
         }
         // Remain should be burn
         if (pending > available) 
@@ -392,7 +341,8 @@ contract ZhiTokenPool is Ownable {
         //  reduce amount
         miner.power = 0;
         miner.amount = 0;
-        miner.rewardBlock = currentBlock;
+        miner.pendingReward = 0;
+        miner.harvestBlock = currentBlock;
         miner.rewardDebt = miner.power.mul(pool.accChaPerShare).div(1e12);
         // minerInfo[_pid][msg.sender] = 0;
 

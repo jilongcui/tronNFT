@@ -15,7 +15,7 @@ module.exports = {
     mainnet: {
       // Don't put your private key here:
       privateKey: process.env.PRIVATE_KEY_MAINNET,
-      userFeePercentage: 100,
+      userFeePercentage: 80,
       feeLimit: 1500 * 1e6,
       fullHost: 'https://api.trongrid.io',
       timeout: 2000,
@@ -24,8 +24,8 @@ module.exports = {
     },
     shasta: {
       privateKey: process.env.PRIVATE_KEY_SHASTA,
-      userFeePercentage: 80,
-      feeLimit: 1000 * 1e6,
+      userFeePercentage: 100,
+      feeLimit: 5000 * 1e6,
       fullHost: 'https://api.shasta.trongrid.io',
       timeout: 2000,
       mnemonic: process.env.MNEMONIC_SHASTA,
@@ -40,7 +40,8 @@ module.exports = {
     },
     development: {
       // For trontools/quickstart docker image
-      privateKey: '5107dc38765f7b0a7bae6e43473e129921b48d91ac53bc572f9dafc4eab6fc6c',
+      privateKey: 'cef2f56267bab49ba95035b5d9528c7078aadfa8267c6e475ed48d48506fdb23',
+      mnemonic: 'novel possible lion inner suffer extend lock hamster spoon belt',
       userFeePercentage: 0,
       feeLimit: 1000 * 1e6,
       fullHost: 'http://47.102.218.158:' + port,

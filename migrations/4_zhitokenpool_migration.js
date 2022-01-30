@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 const ERC20PresetFixedSupply = artifacts.require("ERC20PresetFixedSupply");
 const ERC20HCToken = artifacts.require("ERC20HCToken");
+const ERC20ZhiToken = artifacts.require("ERC20ZhiToken");
 const ZhiTokenPool = artifacts.require("ZhiTokenPool");
 
 const sleep = (timeout) => {
@@ -29,6 +30,8 @@ module.exports = async function(deployer, network, accounts) {
     USDTPairAddress = "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE";
     beneficancy = "TQTxerYaSaR8XHh5mBL4H6A3gktM5Kwanw";
     blackHoleAddress = "T9yD14Nj9j7xAB4dbGeiX9h8upfCg3PBbY";
+    airdropAddress = "TB7Jei89VMW5B3DmifmSGd8HD1Pwtnb62J";
+
     console.log("accounts", accounts);
   }
 
@@ -49,7 +52,6 @@ module.exports = async function(deployer, network, accounts) {
     USDTPairAddress = "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE";
     blackHoleAddress = "T9yD14Nj9j7xAB4dbGeiX9h8upfCg3PBbY";
     console.log("accounts", accounts);
-
   }
   // 发行总量：10000枚
   // HTU66/LP：4000枚
@@ -58,14 +60,21 @@ module.exports = async function(deployer, network, accounts) {
   // Community Pool: 1000
   // Fund base: 400 + 100
 
-  console.log("Pool init start.")
+  console.log("4. Pool init start.")
   // let startTimestamp = toTimestamp("2021-09-18 21:00:00");
-  console.log("accounts", accounts);
-  initSupply = 10000;
+  console.log("4. accounts", accounts);
+  // initSupply = 0;
+  // deployer.deploy(ERC20PresetFixedSupply, 'LPToken', 'LPToken', initSupply*100, accounts);
+  let initSupply = 2888888;
+    let lastRemainSupply = 188888;    
+    let initMuSupply = 1000000;
+    let totalReward = "2880000000000";
+    // deployer.deploy(ERC20ZhiToken, airdropAddress, initSupply, lastRemainSupply, accounts);
+  initSupply = 0; // HC Token 
   deployer.deploy(ERC20HCToken, initSupply, accounts);
   deployer.deploy(ZhiTokenPool);
   await sleep(5000);
-  console.log("Pool init end.")
+  console.log("4. Pool init end.")
 };
 
 function toTimestamp(strDate){
