@@ -112,7 +112,7 @@ contract MuTokenPool is Ownable {
         fefTRXPair = _fefTRXPair;
         usdtPairAddress = _usdtPairAddress;
         chaPerBlock = 8767361; // 252.5/24/1200 should div(1000)
-        padPerBlock = 6028; // should div(1000000)
+        padPerBlock = 3014; // 5*1e6*1e6/2/1200/24/1200/24; // should div(1000000)
         restartReward = 50000000000;
         blackholeAddress = address(0x000000000000000000000000000000000000dEaD);
         totalReward = _totalReward;
